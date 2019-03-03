@@ -1,0 +1,69 @@
+.dgui-left-tab {
+	display: flex;
+	vertical-align: middle;
+	border-width: 1px;
+	border-color: #8A8A8A;
+	background-color: #BABABA;
+	border-style: solid;
+	margin: 0px 0px 0px 7px;
+	height: 40px;
+	border-radius: 10px 0px 0px 10px;
+	font-size: 18px;
+    cursor: default;
+    padding-left: 10px;
+    padding-right: 10px;
+}
+
+.dgui-top-tab {
+	display: flex;
+	border-width: 1px;
+	border-color: #8A8A8A;
+	background-color: #BABABA;
+	border-style: solid;
+	margin: 7px 0px 0px 0px;
+    height: 40px;
+    padding-left: 10px;
+    padding-right: 10px;
+	border-radius: 10px 10px 0px 0px;
+	font-size: 18px;
+    cursor: default;
+}
+
+.dgui-vertical-container {
+    padding: 20px;
+    border-style: solid;
+    border-color: #AAAAAA;
+    border-width: 1px 1px 1px 0px;
+    margin-top: 0px;
+    border-radius: 0px 10px 10px 0px;
+    background-color: lightgrey;
+    text-align: left;
+}
+
+.dgui-horizontal-container {
+    padding: 20px;
+    border-style: solid;
+    border-color: #AAAAAA;
+    border-width: 0px 1px 1px 1px;
+    margin-top: 0px;
+    border-radius: 0px 0px 10px 10px;
+    background-color: lightgrey;
+    text-align: left;
+}
+
+.dgui-form-pannel-element {
+    padding: 10px 20px 10px 20px;
+    display: flex;
+    flex-direction: column;
+}
+
+@keyframes fadeIn {
+    from {background-color: rgba(0, 0, 0, 0)}
+    to {background-color: rgba(0, 0, 0, 0.5)}
+}
+
+.translucent {
+    background-color: rgba(0, 0, 0, 0.5);
+    animation-name: fadeIn;
+    animation-duration: 0.5s;
+}
