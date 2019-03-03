@@ -216,6 +216,12 @@ interface formDisplay {
   containerWidth: number;
 }
 
+interface MDI_options {
+  containerWidth: number;
+  containerHeight: number;
+  menuItemWidth: number;
+  menuLayout: string;
+}
 
 class MDI {
   elm: HTMLDivElement;
@@ -223,7 +229,7 @@ class MDI {
   container_elm: HTMLDivElement;
   lastSelectedElmIndex: any;
   sections: any;
-  display: any;
+  options: MDI_options;
   menu_layout: any;
 
   constructor(mdi, parent) {
@@ -237,30 +243,27 @@ class MDI {
       this.elm.setAttribute("style", "margin-left: 5px; margin-right: 5px; margin-top: 0px");
       this.menu_elm = document.createElement("div");
       this.menu_elm.id = parent.id + "_sections_tabsElm";
-      if(typeof this.menu_layout !== "undefined") {
-        if(this.menu_layout == "horizontal") {
+      if(typeof this.options.menuLayout !== "undefined") {
+        if(this.options.menuLayout == "horizontal") {
           this.elm.setAttribute("class", "form-pannel-vertical-layout")
           this.menu_elm.setAttribute("class", "form-pannel-layout");
         }
-        else if(this.menu_layout == "vertical") {
+        else if(this.options.menuLayout == "vertical") {
           this.elm.setAttribute("class", "form-pannel-layout")
           this.menu_elm.setAttribute("class", "form-pannel-vertical-layout");
-        }
-        if(this.display.tabWidth) {
-          this.menu_elm.style.width = this.display.tabWidth+"px";
         }
       }
       this.container_elm = document.createElement("div");
       this.container_elm.id = parent.id + "_sections_containerElm";
-      if(this.menu_layout == "horizontal") { this.container_elm.setAttribute("class", "dgui-horizontal-container"); }
+      if(this.options.menuLayout == "horizontal") { this.container_elm.setAttribute("class", "dgui-horizontal-container"); }
       else { this.container_elm.setAttribute("class", "dgui-vertical-container"); }
-      if(typeof this.display !== "undefined") {
-        for(let attribut in this.display) {
+      if(this.options) {
+        for(let attribut in this.options) {
           switch(attribut) {
             case "containerWidth":
-              this.container_elm.style.width = this.display[attribut]+"px"; break;
+              this.container_elm.style.width = this.options[attribut]+"px"; break;
             case "containerHeight":
-              this.container_elm.style.height = this.display[attribut]+"px"; break;
+              this.container_elm.style.height = this.options[attribut]+"px"; break;
           }
         }
       }
@@ -272,11 +275,14 @@ class MDI {
         label.setAttribute("style", "margin: auto;");
         label.textContent = this.sections[i].label;
         this.sections[i].tabElm.appendChild(label);
-        if(this.menu_layout == "horizontal") {
+        if(this.options.menuLayout == "horizontal") {
           this.sections[i].tabElm.setAttribute("class", "dgui-top-tab");
         }
         else {
           this.sections[i].tabElm.setAttribute("class", "dgui-left-tab");
+        }
+        if(this.options.menuItemWidth) {
+          this.setTabStyle(this.sections[i].tabElm, {width: this.options.menuItemWidth+"px"});
         }
         (function(i, that){
           that.sections[i].tabElm.addEventListener("click", function(e) {
@@ -289,11 +295,14 @@ class MDI {
             if(e.currentTarget.id != lastSelectedElm_id ) {
               that.initTab(e.currentTarget);
               let lastSelectedTab = document.getElementById(lastSelectedElm_id );
-              if(that.menu_layout == "horizontal") {
+              if(that.options.menuLayout == "horizontal") {
                 that.setTabStyle(lastSelectedTab, {backgroundColor: "#BABABA", height: "40px", marginTop: "7px", borderBottomWidth: "1px", fontWeight: "normal", borderColor: "#8A8A8A"});
               }
               else {
                 that.setTabStyle(lastSelectedTab, {backgroundColor: "#BABABA", height: "40px", marginLeft: "7px", borderRightWidth: "1px", fontWeight: "normal", borderColor: "#8A8A8A"});
+              }
+              if(that.options.menuItemWidth) {
+                that.setTabStyle(lastSelectedTab, {width: that.options.menuItemWidth+"px"});
               }
               // reset
               that.lastSelectedElmIndex = i.toString();
@@ -306,7 +315,7 @@ class MDI {
         this.sections[i].elm.setAttribute("style", "display: none;");
         if(typeof this.sections[i].fields !== "undefined") {
           let scrollElm = document.createElement("div");
-          scrollElm.style.height = this.display.containerHeight-60+"px";
+          scrollElm.style.height = this.options.containerHeight-60+"px";
           scrollElm.style.overflow = "auto";
 
 // Initialisation des champs
@@ -319,14 +328,14 @@ class MDI {
         this.menu_elm.appendChild(this.sections[i].tabElm);
         let spaceBetween = document.createElement("div");
         if(i != parseInt(this.sections.length)-1) {
-          if(this.menu_layout == "vertical") { spaceBetween.setAttribute("style", "border-right: 1px solid #AAAAAA; width: 0px;"); }
+          if(this.options.menuLayout == "vertical") { spaceBetween.setAttribute("style", "border-right: 1px solid #AAAAAA; width: 0px;"); }
           else {
             spaceBetween.setAttribute("style", "border-bottom: 1px solid #8A8A8A; height: 7px;");
             this.menu_elm.appendChild(spaceBetween);
           }
         }
         else {
-          if(this.menu_layout == "horizontal") { spaceBetween.setAttribute("style", "border-bottom: 1px solid #8A8A8A; flex-grow: 1;"); }
+          if(this.options.menuLayout == "horizontal") { spaceBetween.setAttribute("style", "border-bottom: 1px solid #8A8A8A; flex-grow: 1;"); }
           else { spaceBetween.setAttribute("style", "border-right: 1px solid #AAAAAA; flex-grow: 1;"); }
           this.menu_elm.appendChild(spaceBetween);
         }
@@ -347,11 +356,14 @@ class MDI {
   }
 
   initTab(tab) {
-    if(this.menu_layout == "horizontal") {
+    if(this.options.menuLayout == "horizontal") {
       this.setTabStyle(tab, {backgroundColor: "#D3D3D3", height: "44px", marginTop: "3px", borderBottomWidth: "0px", fontWeight: "bold", borderColor: "#AAAAAA"});
     }
-    else if(this.menu_layout == "vertical") {
+    else if(this.options.menuLayout == "vertical") {
       this.setTabStyle(tab, {backgroundColor: "#D3D3D3", height: "44px", marginLeft: "3px", borderRightWidth: "0px", fontWeight: "bold", borderColor: "#AAAAAA"});
+    }
+    if(this.options.menuItemWidth) {
+      this.setTabStyle(tab, {width: this.options.menuItemWidth+4+"px"});
     }
   }
 
