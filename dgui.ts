@@ -138,6 +138,9 @@ class Field {
       if(field.placeholder) {
          this.input_elm.setAttribute("placeholder", field.placeholder);
       }
+      if(field.align) {
+        this.input_elm.style.textAlign = field.align;
+      }
       if(field.max) {
         this.input_elm.setAttribute("maxlength", field.max);
       }
@@ -269,81 +272,76 @@ class MDI {
       }
       this.lastSelectedElmIndex=0;
       for(var i=0; i < this.sections.length; ++i) {
-        this.sections[i].tabElm = document.createElement("div");
-        this.sections[i].tabElm.id = parent.id+"_tab"+i.toString();
-        let label = document.createElement("span");
-        label.setAttribute("style", "margin: auto;");
-        label.textContent = this.sections[i].label;
-        this.sections[i].tabElm.appendChild(label);
-        if(this.options.menuLayout == "horizontal") {
-          this.sections[i].tabElm.setAttribute("class", "dgui-top-tab");
-        }
-        else {
-          this.sections[i].tabElm.setAttribute("class", "dgui-left-tab");
-        }
-        if(this.options.menuItemWidth) {
-          this.setTabStyle(this.sections[i].tabElm, {width: this.options.menuItemWidth+"px"});
-        }
-        (function(i, that){
-          that.sections[i].tabElm.addEventListener("click", function(e) {
-            let sectionToShowID = parent.id + "_section" + i.toString();
-            let lastSelectedElement = document.getElementById(parent.id+"_section"+that.lastSelectedElmIndex);
-            lastSelectedElement.style.display = "none";
-            document.getElementById(sectionToShowID).style.display = "block";
-            //  animation
-            let lastSelectedElm_id = parent.id+"_tab"+that.lastSelectedElmIndex;
-            if(e.currentTarget.id != lastSelectedElm_id ) {
-              that.initTab(e.currentTarget);
-              let lastSelectedTab = document.getElementById(lastSelectedElm_id );
-              if(that.options.menuLayout == "horizontal") {
-                that.setTabStyle(lastSelectedTab, {backgroundColor: "#BABABA", height: "40px", marginTop: "7px", borderBottomWidth: "1px", fontWeight: "normal", borderColor: "#8A8A8A"});
-              }
-              else {
-                that.setTabStyle(lastSelectedTab, {backgroundColor: "#BABABA", height: "40px", marginLeft: "7px", borderRightWidth: "1px", fontWeight: "normal", borderColor: "#8A8A8A"});
-              }
-              if(that.options.menuItemWidth) {
-                that.setTabStyle(lastSelectedTab, {width: that.options.menuItemWidth+"px"});
-              }
-              // reset
-              that.lastSelectedElmIndex = i.toString();
-            }
-          });
-        })(i, this);
-        this.sections[i].elm = document.createElement("div");
-        this.sections[i].elm.id = parent.id + "_section" + i.toString();
-        this.sections[i].elm.setAttribute("class", "form-pannel-vertical-layout");
-        this.sections[i].elm.setAttribute("style", "display: none;");
-        if(typeof this.sections[i].fields !== "undefined") {
-          let scrollElm = document.createElement("div");
-          scrollElm.style.height = this.options.containerHeight-60+"px";
-          scrollElm.style.overflow = "auto";
-
-// Initialisation des champs
-          var section_fields = this.sections[i].fields;
-          this.sections[i].fields = [];
-          this.initFields(this.sections[i], section_fields, scrollElm);
-          this.sections[i].elm.appendChild(scrollElm);
-////////////////////////////
-        }
-        this.menu_elm.appendChild(this.sections[i].tabElm);
-        let spaceBetween = document.createElement("div");
-        if(i != parseInt(this.sections.length)-1) {
-          if(this.options.menuLayout == "vertical") { spaceBetween.setAttribute("style", "border-right: 1px solid #AAAAAA; width: 0px;"); }
-          else {
-            spaceBetween.setAttribute("style", "border-bottom: 1px solid #8A8A8A; height: 7px;");
-            this.menu_elm.appendChild(spaceBetween);
+        if(typeof this.sections[i].condition === "undefined" || (typeof this.sections[i].condition !== "undefined" && this.sections[i].condition === true)) {
+          this.sections[i].tabElm = document.createElement("div");
+          this.sections[i].tabElm.id = parent.id+"_tab"+i.toString();
+          let label = document.createElement("span");
+          label.setAttribute("style", "margin: auto;");
+          label.textContent = this.sections[i].label;
+          this.sections[i].tabElm.appendChild(label);
+          if(this.options.menuLayout == "horizontal") {
+            this.sections[i].tabElm.setAttribute("class", "dgui-top-tab");
           }
+          else {
+            this.sections[i].tabElm.setAttribute("class", "dgui-left-tab");
+          }
+          if(this.options.menuItemWidth) {
+            this.setTabStyle(this.sections[i].tabElm, {width: this.options.menuItemWidth+"px"});
+          }
+          (function(i, that){
+            that.sections[i].tabElm.addEventListener("click", function(e) {
+              let sectionToShowID = parent.id + "_section" + i.toString();
+              let lastSelectedElement = document.getElementById(parent.id+"_section"+that.lastSelectedElmIndex);
+              lastSelectedElement.style.display = "none";
+              document.getElementById(sectionToShowID).style.display = "block";
+              //  animation
+              let lastSelectedElm_id = parent.id+"_tab"+that.lastSelectedElmIndex;
+              if(e.currentTarget.id != lastSelectedElm_id ) {
+                that.initTab(e.currentTarget);
+                let lastSelectedTab = document.getElementById(lastSelectedElm_id );
+                if(that.options.menuLayout == "horizontal") {
+                  that.setTabStyle(lastSelectedTab, {backgroundColor: "#BABABA", height: "40px", marginTop: "7px", borderBottomWidth: "1px", fontWeight: "normal", borderColor: "#8A8A8A"});
+                }
+                else {
+                  that.setTabStyle(lastSelectedTab, {backgroundColor: "#BABABA", height: "40px", marginLeft: "7px", borderRightWidth: "1px", fontWeight: "normal", borderColor: "#8A8A8A"});
+                }
+                if(that.options.menuItemWidth) {
+                  that.setTabStyle(lastSelectedTab, {width: that.options.menuItemWidth+"px"});
+                }
+                // reset
+                that.lastSelectedElmIndex = i.toString();
+              }
+            });
+          })(i, this);
+          this.sections[i].elm = document.createElement("div");
+          this.sections[i].elm.id = parent.id + "_section" + i.toString();
+          this.sections[i].elm.setAttribute("class", "form-pannel-vertical-layout");
+          this.sections[i].elm.setAttribute("style", "display: none;");
+          if(typeof this.sections[i].fields !== "undefined") {
+            let scrollElm = document.createElement("div");
+            scrollElm.style.height = this.options.containerHeight-60+"px";
+            scrollElm.style.overflow = "auto";
+
+  // Initialisation des champs
+            var section_fields = this.sections[i].fields;
+            this.sections[i].fields = [];
+            this.initFields(this.sections[i], section_fields, scrollElm);
+            this.sections[i].elm.appendChild(scrollElm);
+  ////////////////////////////
+          }
+          this.menu_elm.appendChild(this.sections[i].tabElm);
+          this.container_elm.appendChild(this.sections[i].elm);
         }
-        else {
-          if(this.options.menuLayout == "horizontal") { spaceBetween.setAttribute("style", "border-bottom: 1px solid #8A8A8A; flex-grow: 1;"); }
-          else { spaceBetween.setAttribute("style", "border-right: 1px solid #AAAAAA; flex-grow: 1;"); }
-          this.menu_elm.appendChild(spaceBetween);
-        }
-        this.container_elm.appendChild(this.sections[i].elm);
       }
+      // Ajout de l'élément invisible qui complète la bordure du container
+      let spaceBetween = document.createElement("div");
+      if(this.options.menuLayout == "horizontal") { spaceBetween.setAttribute("style", "border-bottom: 1px solid #AAAAAA; flex-grow: 1;"); }
+      else { spaceBetween.setAttribute("style", "border-right: 1px solid #AAAAAA; flex-grow: 1;"); }
+      this.menu_elm.appendChild(spaceBetween);
+      // Ajout du menu et du container
       this.elm.appendChild(this.menu_elm);
       this.elm.appendChild(this.container_elm);
-
+      // initialisation du MDI
       this.initTab(this.sections[0].tabElm);
       this.initSection(this.sections[0].elm);
     }
@@ -377,8 +375,10 @@ class MDI {
           formPannelLayout.style.paddingLeft = 15+"px";
           formPannelLayout.style.paddingRight = 15+"px";
         }
+        var fields_inputs = [];
         field_s.forEach(function(field) {
           field = new Field(field);
+          fields_inputs.push({input: field.input_elm, max: (field.max) ? field.max : null});
           section.fields.push(field);
           if(reduce_padding) {
             field.elm.style.paddingLeft = 5+"px";
@@ -386,6 +386,23 @@ class MDI {
           }
           formPannelLayout.appendChild(field.elm);
         });
+        for(let i = 0; i < fields_inputs.length; ++i) {
+          if(fields_inputs[i].max) {
+            fields_inputs[i].input.addEventListener("input", (e) => {
+              e.currentTarget.value = e.currentTarget.value.toUpperCase();
+            });
+          }
+          fields_inputs[i].input.addEventListener("keyup", (e) => {
+            if(fields_inputs[i].max) {
+              if(i < fields_inputs.length-1 && e.currentTarget.value.length == fields_inputs[i].max) {
+                fields_inputs[i+1].input.focus();
+              }
+            }
+            if(i >= 1 && (e.keyCode == 8 && e.currentTarget.value.length == 0)) {
+              fields_inputs[i-1].input.focus();
+            }
+          });
+        }
         scrollElm.appendChild(formPannelLayout);
       }
       else {
@@ -595,7 +612,13 @@ class FormPannel {
 
   returnPromise(objet, section) { 
     return new Promise((resolve, reject) => {
-      section.onSubmit(objet[section.key], resolve, reject);
+      if(Object.keys(objet[section.key]).length !== 0) {
+        section.onSubmit(objet[section.key], resolve, reject);
+      }
+      else {
+        // Si l'objet est vide on ne le soumet pas à l'utilisateur pour validation
+        resolve(true);
+      }
     });
   }
 
