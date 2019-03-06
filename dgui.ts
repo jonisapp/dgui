@@ -1,6 +1,8 @@
-// Utilities
+// A utiliser dans le cadre d'une application Meteor pour profiter des avantages de la réactivité
 
-
+// async function enableMeteorReactivity() {
+//   const { Tracker } = await import('meteor/tracker');
+// }
 
 /////////////////////////////////////////////////////////////////
 
@@ -13,6 +15,7 @@ class Translucent {
     var that = this;
     this.opacity = 0.0;
     this.elm = document.createElement("div");
+    this.elm.setAttribute("id", "dgui_translucent");
     this.elm.setAttribute("class", "translucent");//                     <- Classe translucent
     this.elm.style.display = "flex";
     this.elm.style.justifyContent = "center";
@@ -57,10 +60,12 @@ class Translucent {
 
   del() {
     var that = this;
-    window.removeEventListener("scroll", that.scrollLock);
-    document.body.style.background = this.tmp_body_backgroud;
-    document.body.style.overflow = "visible";
     this.elm.parentNode.removeChild(this.elm);
+    if(!document.getElementById("dgui_translucent")) {
+      window.removeEventListener("scroll", that.scrollLock);
+      document.body.style.background = this.tmp_body_backgroud;
+      document.body.style.overflow = "visible";
+    }
   }
 }
 
@@ -105,9 +110,12 @@ class Field {
   label: string;
   value: string;
   size: number;
+  action: function;
+  BSClass: string;
   // constroller
   input_elm: any;
-  label_elm: any;
+  button_elm: HTMLButtonElement;
+  label_elm: HTMLLabelElement;
   elm: any;
   // user & controller
   initValue: string;
@@ -129,12 +137,19 @@ class Field {
       this.input_elm.style.cursor = "default";
       this.input_elm.style.textAlign = "left";
       this.input_elm.innerHTML = field.message; break;
+      case "button":
+      this.button_elm = document.createElement("button");
+      this.button_elm.setAttribute("class", this.BSClass);
+      this.button_elm.textContent = this.label;
+      this.button_elm.addEventListener("click", that.action);
       case "text": case "password":
       this.label_elm = document.createElement("label");
       this.label_elm.textContent = field.label;
+      this.label_elm.setAttribute("style", "text-align: left");
       this.input_elm = document.createElement("input");
       this.input_elm.setAttribute("type", field.type);
       this.input_elm.setAttribute("class", "form form-control");
+      this.input_elm.setAttribute("autocorrect", "off");
       if(field.placeholder) {
          this.input_elm.setAttribute("placeholder", field.placeholder);
       }
@@ -188,6 +203,9 @@ class Field {
         that.elm.appendChild(radioAndLabel);
       });
     }
+    else if(this.type == "button") {
+      this.elm.appendChild(this.button_elm);
+    }
     else if(field.type == "text" || field.type == "password") {
       if(field.label) {
         this.elm.appendChild(this.label_elm);
@@ -239,7 +257,7 @@ class MDI {
     for(let attribut in mdi) {
       this[attribut] = mdi[attribut];
     }
-    // Initialisation des Sections
+    // génération du menu et du container
     if(typeof this.sections !== "undefined") {
       this.elm = document.createElement("div");
       this.elm.id = parent.id + "_sections_elm";
@@ -270,8 +288,10 @@ class MDI {
           }
         }
       }
+      // génération des sections
       this.lastSelectedElmIndex=0;
       for(var i=0; i < this.sections.length; ++i) {
+        console.log(this.sections[i].condition);
         if(typeof this.sections[i].condition === "undefined" || (typeof this.sections[i].condition !== "undefined" && this.sections[i].condition === true)) {
           this.sections[i].tabElm = document.createElement("div");
           this.sections[i].tabElm.id = parent.id+"_tab"+i.toString();
@@ -321,13 +341,11 @@ class MDI {
             let scrollElm = document.createElement("div");
             scrollElm.style.height = this.options.containerHeight-60+"px";
             scrollElm.style.overflow = "auto";
-
-  // Initialisation des champs
+// Initialisation des champs
             var section_fields = this.sections[i].fields;
             this.sections[i].fields = [];
             this.initFields(this.sections[i], section_fields, scrollElm);
             this.sections[i].elm.appendChild(scrollElm);
-  ////////////////////////////
           }
           this.menu_elm.appendChild(this.sections[i].tabElm);
           this.container_elm.appendChild(this.sections[i].elm);
