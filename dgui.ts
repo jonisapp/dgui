@@ -108,17 +108,18 @@ class Field {
   key: string;
   name: string;
   label: string;
-  value: string;
+  value: string | boolean | number;
   size: number;
-  action: function;
+  action: any;
   BSClass: string;
   // constroller
   input_elm: any;
   button_elm: HTMLButtonElement;
   label_elm: HTMLLabelElement;
   elm: any;
+  switched: boolean;
   // user & controller
-  initValue: string;
+  initValue: string | boolean | number;
   radioButtons: Array<radioButton>;
 
   constructor(field) {
@@ -132,8 +133,30 @@ class Field {
       this.type = "text";
     }
     switch(field.type) {
+      case "switch":
+      this.input_elm = document.createElement("div");
+      this.input_elm.setAttribute("class", "invoice-leftMenu-button");
+      this.input_elm.setAttribute("style", "display: flex; justify-content: center; align-items: center");
+      let text_elm = document.createElement("div");
+      text_elm.textContent = this.label;
+      this.input_elm.appendChild(text_elm);
+      this.input_elm.setAttribute("class", (this.initValue) ? "invoice-leftMenu-button-selected" : "invoice-leftMenu-button");
+      this.value = this.initValue;
+      this.input_elm.addEventListener("click", (e) => {
+        let elm = e.currentTarget;
+        if(!that.value) {
+          elm.setAttribute("class", "invoice-leftMenu-button-selected");
+          that.value = true;
+        }
+        else {
+          elm.setAttribute("class", "invoice-leftMenu-button");
+          that.value = false;
+        }
+      });
+      break;
       case "message":
       this.input_elm = document.createElement("div");
+      this.input_elm.setAttribute("style", "margin-top: 10px")
       this.input_elm.style.cursor = "default";
       this.input_elm.style.textAlign = "left";
       this.input_elm.innerHTML = field.message; break;
@@ -252,11 +275,13 @@ class MDI {
   sections: any;
   options: MDI_options;
   menu_layout: any;
+  parent: FormPannel;
 
   constructor(mdi, parent) {
     for(let attribut in mdi) {
       this[attribut] = mdi[attribut];
     }
+    this.parent = parent;
     // génération du menu et du container
     if(typeof this.sections !== "undefined") {
       this.elm = document.createElement("div");
@@ -291,7 +316,6 @@ class MDI {
       // génération des sections
       this.lastSelectedElmIndex=0;
       for(var i=0; i < this.sections.length; ++i) {
-        console.log(this.sections[i].condition);
         if(typeof this.sections[i].condition === "undefined" || (typeof this.sections[i].condition !== "undefined" && this.sections[i].condition === true)) {
           this.sections[i].tabElm = document.createElement("div");
           this.sections[i].tabElm.id = parent.id+"_tab"+i.toString();
@@ -344,7 +368,7 @@ class MDI {
 // Initialisation des champs
             var section_fields = this.sections[i].fields;
             this.sections[i].fields = [];
-            this.initFields(this.sections[i], section_fields, scrollElm);
+            this.parent.generateFields(this.sections[i], section_fields, scrollElm);
             this.sections[i].elm.appendChild(scrollElm);
           }
           this.menu_elm.appendChild(this.sections[i].tabElm);
@@ -373,62 +397,14 @@ class MDI {
 
   initTab(tab) {
     if(this.options.menuLayout == "horizontal") {
-      this.setTabStyle(tab, {backgroundColor: "#D3D3D3", height: "44px", marginTop: "3px", borderBottomWidth: "0px", fontWeight: "bold", borderColor: "#AAAAAA"});
+      this.setTabStyle(tab, {backgroundColor: "#D3D3D3", height: "44px", marginTop: "3px", borderBottomWidth: "0px", fontWeight: "normal", borderColor: "#AAAAAA"});
     }
     else if(this.options.menuLayout == "vertical") {
-      this.setTabStyle(tab, {backgroundColor: "#D3D3D3", height: "44px", marginLeft: "3px", borderRightWidth: "0px", fontWeight: "bold", borderColor: "#AAAAAA"});
+      this.setTabStyle(tab, {backgroundColor: "#D3D3D3", height: "44px", marginLeft: "3px", borderRightWidth: "0px", fontWeight: "normal", borderColor: "#AAAAAA"});
     }
     if(this.options.menuItemWidth) {
       this.setTabStyle(tab, {width: this.options.menuItemWidth+4+"px"});
     }
-  }
-
-  initFields(section, section_fields, scrollElm) {
-    section_fields.forEach(function(field_s) {
-      if(Array.isArray(field_s)) {
-        var formPannelLayout = document.createElement("div");
-        formPannelLayout.setAttribute("class", "form-pannel-layout");
-        var reduce_padding = (field_s.length > 3) ? true : false;
-        if(reduce_padding) {
-          formPannelLayout.style.paddingLeft = 15+"px";
-          formPannelLayout.style.paddingRight = 15+"px";
-        }
-        var fields_inputs = [];
-        field_s.forEach(function(field) {
-          field = new Field(field);
-          fields_inputs.push({input: field.input_elm, max: (field.max) ? field.max : null});
-          section.fields.push(field);
-          if(reduce_padding) {
-            field.elm.style.paddingLeft = 5+"px";
-            field.elm.style.paddingRight = 5+"px";
-          }
-          formPannelLayout.appendChild(field.elm);
-        });
-        for(let i = 0; i < fields_inputs.length; ++i) {
-          if(fields_inputs[i].max) {
-            fields_inputs[i].input.addEventListener("input", (e) => {
-              e.currentTarget.value = e.currentTarget.value.toUpperCase();
-            });
-          }
-          fields_inputs[i].input.addEventListener("keyup", (e) => {
-            if(fields_inputs[i].max) {
-              if(i < fields_inputs.length-1 && e.currentTarget.value.length == fields_inputs[i].max) {
-                fields_inputs[i+1].input.focus();
-              }
-            }
-            if(i >= 1 && (e.keyCode == 8 && e.currentTarget.value.length == 0)) {
-              fields_inputs[i-1].input.focus();
-            }
-          });
-        }
-        scrollElm.appendChild(formPannelLayout);
-      }
-      else {
-        let field = new Field(field_s);
-        section.fields.push(field);
-        scrollElm.appendChild(field.elm);
-      }
-    });
   }
 
   initSection(sectionElm) {
@@ -471,12 +447,19 @@ class FormPannel {
       this.MDI = new MDI(this.MDI, this);
     }
     
-    // Initalisation des Fields
-    if(typeof this.fields !== "undefined") {
-      for(let i=0; i<this.fields.length; ++i) {
-        this.fields[i] = new Field(this.fields[i]);
-      }
-    }
+    // Génération des Fields
+    // if(typeof this.fields !== "undefined") {
+    //   for(let i=0; i<this.fields.length; ++i) {
+    //     this.fields[i] = new Field(this.fields[i]);
+    //   }
+    // }
+    let scrollElm = document.createElement("div");
+    //scrollElm.style.height = this.options.containerHeight-60+"px";
+    scrollElm.style.overflow = "auto";
+    let fields = this.fields;
+    this.fields = [];
+    this.generateFields(that, fields, scrollElm);
+    this.elm.appendChild(scrollElm);
 
     this.initDisplay();
 
@@ -502,19 +485,20 @@ class FormPannel {
     formPannelBody.setAttribute("style", "padding: 10px; background-color: #DDDDDD; border-radius: 7px; text-align: center;");
     if(typeof this.fields !== "undefined") {
       var that = this;
-      this.fields.map(function(field, index) {
-        if(field.type != "choice") {
-          (function(field, index, that){
-            field.input_elm.addEventListener("keydown", function(e) {
-              if(e.keyCode == 9 && (index < that.fields.length-1)) {
-                e.preventDefault();
-                that.fields[index+1].input_elm.focus();
-              }
-            });
-          })(field, index, that);
-        }
-        formPannelBody.appendChild(field.elm);
-      });
+      // this.fields.map(function(field, index) {
+      //   if(field.type != "choice") {
+      //     (function(field, index, that){
+      //       field.input_elm.addEventListener("keydown", function(e) {
+      //         if(e.keyCode == 9 && (index < that.fields.length-1)) {
+      //           e.preventDefault();
+      //           that.fields[index+1].input_elm.focus();
+      //         }
+      //       });
+      //     })(field, index, that);
+      //   }
+      //   formPannelBody.appendChild(field.elm);
+      // });
+      formPannelBody.appendChild(scrollElm);
     }
 
     this.initFooter();
@@ -526,6 +510,56 @@ class FormPannel {
     formPannelBody.appendChild(this.footer_elm);
     this.elm.appendChild(formPannelHeader);
     this.elm.appendChild(formPannelBody);
+  }
+
+  generateFields(fieldsContainer, fields, scrollElm) {
+    if(fields) {
+      fields.forEach(function(field_s) {
+        if(Array.isArray(field_s)) {
+          var formPannelLayout = document.createElement("div");
+          formPannelLayout.setAttribute("class", "form-pannel-layout");
+          var reduce_padding = (field_s.length > 3) ? true : false;
+          if(reduce_padding) {
+            formPannelLayout.style.paddingLeft = 15+"px";
+            formPannelLayout.style.paddingRight = 15+"px";
+          }
+          var fields_inputs = [];
+          field_s.forEach(function(field) {
+            field = new Field(field);
+            fields_inputs.push({input: field.input_elm, max: (field.max) ? field.max : null});
+            fieldsContainer.fields.push(field);
+            if(reduce_padding) {
+              field.elm.style.paddingLeft = 5+"px";
+              field.elm.style.paddingRight = 5+"px";
+            }
+            formPannelLayout.appendChild(field.elm);
+          });
+          for(let i = 0; i < fields_inputs.length; ++i) {
+            if(fields_inputs[i].max) {
+              fields_inputs[i].input.addEventListener("input", (e) => {
+                e.currentTarget.value = e.currentTarget.value.toUpperCase();
+              });
+            }
+            fields_inputs[i].input.addEventListener("keyup", (e) => {
+              if(fields_inputs[i].max) {
+                if(i < fields_inputs.length-1 && e.currentTarget.value.length == fields_inputs[i].max) {
+                  fields_inputs[i+1].input.focus();
+                }
+              }
+              if(i >= 1 && (e.keyCode == 8 && e.currentTarget.value.length == 0)) {
+                fields_inputs[i-1].input.focus();
+              }
+            });
+          }
+          scrollElm.appendChild(formPannelLayout);
+        }
+        else {
+          let field = new Field(field_s);
+          fieldsContainer.fields.push(field);
+          scrollElm.appendChild(field.elm);
+        }
+      });
+    }
   }
   
   initDisplay() {
@@ -651,9 +685,10 @@ class FormPannel {
   }
 
   submitField(field, values) {
+    let initValue = (typeof field.initValue !== "undefined") ? field.initValue : "";
     if(field.type == "text" || field.type == "password") {
       // On ne soumet que les champs dont la valeur a été modifiée
-      if(field.input_elm.value != field.initValue) {
+      if(field.input_elm.value != initValue) {
         // Si le champs possède un attribut key il sera renvoyé sous forme d'objet (key: value)
         if(typeof field.key !== "undefined") {
           let objTextField = {};
@@ -662,6 +697,20 @@ class FormPannel {
         }
         else {
           values.push(field.input_elm.value);
+        }
+      }
+    }
+    else if(field.type == "switch") {
+      // On ne soumet que les champs dont la valeur a été modifiée
+      if(field.value != initValue) {
+        // Si le champs possède un attribut key il sera renvoyé sous forme d'objet (key: value)
+        if(typeof field.key !== "undefined") {
+          let objSwitchField = {};
+          objSwitchField[field.key] = field.value;
+          values.push(objSwitchField);
+        }
+        else {
+          values.push(field.value);
         }
       }
     }
@@ -747,14 +796,70 @@ export class modal {
 
   abort() {
     //this.clean();
-    this.feedback(false);
+    //this.feedback(false);
     this.background.del();
+  }
+}
+
+//////////////////////////////////// Menu contextuel dGUI (experimental) /////////////////////////////////
+
+var dgui_contextMenu = false;
+
+export function contextMenu(e, fields, callback) {
+  if(!dgui_contextMenu) {
+    dgui_contextMenu = true;
+    this.selected_items = [];
+    this.changeColor = function(elm, bg, c, bc) {
+      elm.style.backgroundColor = bg;
+      elm.style.color = c;
+      elm.style.borderColor = bc;
+    };
+    this.contextMenu_elm = document.createElement("div");
+    this.contextMenu_elm.setAttribute("class", "dgui-contextMenu light-shadow");
+    let position = e.currentTarget.getBoundingClientRect();
+    this.contextMenu_elm.style.left = position.left + window.scrollX + "px";
+    this.contextMenu_elm.style.top = position.bottom + window.scrollY + "px";
+    var that = this;
+    fields.forEach((field) => {
+      let menuItem = document.createElement("div");
+      menuItem.setAttribute("class", "dgui-contextMenu-item js-no-selection");
+      menuItem.textContent = field.label;
+      menuItem.setAttribute("data-key", field.key);
+      if(field.initValue) {
+        that.selected_items.push(field.key);
+        that.changeColor(menuItem, "#b7c6b3", "white", "#777777");
+      }
+      that.contextMenu_elm.appendChild(menuItem);
+      that.contextMenuClose = function(e) {
+        if(e.target.parentNode != that.contextMenu_elm) {
+          setTimeout(function() {
+            that.contextMenu_elm.parentNode.removeChild(that.contextMenu_elm);
+            document.body.removeEventListener("mouseup", that.contextMenuClose);
+            dgui_contextMenu = false;
+            callback(that.selected_items);
+          }, 10);
+        }
+        else {
+          if(!that.selected_items.includes(e.target.dataset.key)) {
+            that.changeColor(e.target, "#b7c6b3", "white", "#777777");
+            that.selected_items.push(e.target.dataset.key);
+          }
+          else {
+            let index = that.selected_items.indexOf(e.target.dataset.key);
+            that.selected_items.splice(index, 1);
+            that.changeColor(e.target, "lightgrey", "black", "#aaaaaa");
+          }
+        }
+      }
+    });
+    document.body.appendChild(this.contextMenu_elm);
+    document.body.addEventListener("mouseup", this.contextMenuClose);
   }
 }
 
 //////////////////////////////////// Boîtes de dialogue communes dGUI ////////////////////////////////////
 
-export function alert(message, callback, title="Information") {
+export function alert(message, title="Information", callback) {
   new modal({
     title: title,
     fields: [{type: "message", message: message}],

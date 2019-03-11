@@ -1,3 +1,24 @@
+.dgui-contextMenu {
+    position: absolute;
+    border-width: 1px 0px 0px 0px;
+    border-color: #aaaaaa;
+    border-style: solid;
+}
+
+.dgui-contextMenu-item {
+    background-color: lightgrey;
+    border-width: 0px 1px 1px 1px;
+    border-style: solid;
+    border-color: #aaaaaa;
+    padding: 10px 10px 10px 10px;
+    min-width: 200px;
+    text-align: center;
+    cursor: default;
+}
+.dgui-contextMenu-item:hover {
+    background-color: #D1DAD1;
+}
+
 .dgui-left-tab {
 	display: flex;
 	vertical-align: middle;
@@ -27,6 +48,47 @@
 	border-radius: 10px 10px 0px 0px;
 	font-size: 18px;
     cursor: default;
+    font-family: 'robotoRegular';
+}
+
+.dgui-top-tab-frameless {
+    display: flex;
+    color: #aaaaaa;
+	border-width: 0px 0px 1px 0px;
+	border-color: #bbbbbb;
+	border-style: solid;
+	margin: 7px 0px 0px 0px;
+    height: 45px;
+    padding-left: 10px;
+    padding-right: 10px;
+	border-radius: 2px 2px 0px 0px;
+	font-size: 18px;
+    cursor: default;
+    border-radius: 7px 7px 0px 0px;
+}
+
+.dgui-top-tab-frameless:hover {
+    border-width: 1px 1px 1px 1px;
+    padding-left: 9px;
+    padding-right: 9px;
+}
+
+.dgui-top-tab-framed {
+	display: flex;
+	border-width: 1px 1px 0px 1px;
+	border-color: #bbbbbb;
+    /*background-color: #e5e5e5;*/
+    background: rgb(255,255,255);
+    background: linear-gradient(0deg, rgba(255,255,255,1) 0%, rgba(221,221,221,1) 100%);
+	border-style: solid;
+	margin: 7px 0px 0px 0px;
+    height: 45px;
+    padding-left: 10px;
+    padding-right: 10px;
+	border-radius: 7px 7px 0px 0px;
+	font-size: 18px;
+    cursor: default;
+    background-color: #e5e5e5;
 }
 
 .dgui-vertical-container {
@@ -38,6 +100,7 @@
     border-radius: 0px 10px 10px 0px;
     background-color: lightgrey;
     text-align: left;
+    font-family: 'robotoRegular';
 }
 
 .dgui-horizontal-container {
@@ -49,6 +112,7 @@
     border-radius: 0px 0px 10px 10px;
     background-color: lightgrey;
     text-align: left;
+    font-family: 'robotoRegular';
 }
 
 .dgui-form-pannel-element {
