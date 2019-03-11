@@ -803,58 +803,119 @@ export class modal {
 
 //////////////////////////////////// Menu contextuel dGUI (experimental) /////////////////////////////////
 
-var dgui_contextMenu = false;
+interface contextMenu_field {
+  // user
+  type: "switch",
+  key: string,
+  label: string,
+  initValue: any,
+  action: Function,
+  // controller
+  elm: HTMLDivElement,
+  value: Boolean,
+  // user & controller
+}
 
-export function contextMenu(e, fields, callback) {
-  if(!dgui_contextMenu) {
-    dgui_contextMenu = true;
-    this.selected_items = [];
-    this.changeColor = function(elm, bg, c, bc) {
-      elm.style.backgroundColor = bg;
-      elm.style.color = c;
-      elm.style.borderColor = bc;
-    };
-    this.contextMenu_elm = document.createElement("div");
-    this.contextMenu_elm.setAttribute("class", "dgui-contextMenu light-shadow");
-    let position = e.currentTarget.getBoundingClientRect();
-    this.contextMenu_elm.style.left = position.left + window.scrollX + "px";
-    this.contextMenu_elm.style.top = position.bottom + window.scrollY + "px";
+interface contextMenu_options {
+  initPosition: "bottom" | "mouse"
+}
+
+/* --------------------------------- CLASS ContextMenu -------------------------------------------------*/
+
+class ContextMenu {
+
+  // Définition
+  elm: HTMLDivElement;
+  options: contextMenu_options;
+  fields: Array<contextMenu_field>;
+  event_close: any;
+  selected_items: Array<string>
+
+  // Constructeur
+  constructor(event, contextMenu_init, callback) {
     var that = this;
-    fields.forEach((field) => {
-      let menuItem = document.createElement("div");
-      menuItem.setAttribute("class", "dgui-contextMenu-item js-no-selection");
-      menuItem.textContent = field.label;
-      menuItem.setAttribute("data-key", field.key);
-      if(field.initValue) {
-        that.selected_items.push(field.key);
-        that.changeColor(menuItem, "#b7c6b3", "white", "#777777");
-      }
-      that.contextMenu_elm.appendChild(menuItem);
-      that.contextMenuClose = function(e) {
-        if(e.target.parentNode != that.contextMenu_elm) {
-          setTimeout(function() {
-            that.contextMenu_elm.parentNode.removeChild(that.contextMenu_elm);
-            document.body.removeEventListener("mouseup", that.contextMenuClose);
-            dgui_contextMenu = false;
-            callback(that.selected_items);
-          }, 10);
-        }
-        else {
-          if(!that.selected_items.includes(e.target.dataset.key)) {
-            that.changeColor(e.target, "#b7c6b3", "white", "#777777");
-            that.selected_items.push(e.target.dataset.key);
-          }
-          else {
-            let index = that.selected_items.indexOf(e.target.dataset.key);
-            that.selected_items.splice(index, 1);
-            that.changeColor(e.target, "lightgrey", "black", "#aaaaaa");
-          }
+    for(let property in contextMenu_init) {
+      this[property] = contextMenu_init[property];
+    }
+    this.elm = document.createElement("div");
+    this.elm.setAttribute("class", "dgui-contextMenu light-shadow");
+    if(this.options) {
+      if(this.options.initPosition) {
+        let htmlTargetPosition = event.currentTarget.getBoundingClientRect();
+        switch(this.options.initPosition) {
+          case "mouse":
+            this.elm.style.left = event.clientX + window.scrollX + "px";
+            this.elm.style.top = event.clientY + window.scrollY + "px"; break;
+          case "bottom":
+            this.elm.style.left = htmlTargetPosition.left + window.scrollX + "px";
+            this.elm.style.top = htmlTargetPosition.bottom + window.scrollY + "px"; break;
+          case "right":
+            this.elm.style.left = htmlTargetPosition.right + window.scrollX + "px";
+            this.elm.style.top = htmlTargetPosition.top + window.scrollX + "px"; break;
         }
       }
-    });
-    document.body.appendChild(this.contextMenu_elm);
-    document.body.addEventListener("mouseup", this.contextMenuClose);
+    }
+    this.selected_items = [];
+    if(this.fields) {
+      this.fields.forEach((field, index) => {
+        field.elm = document.createElement("div");
+        field.elm.setAttribute("data-index", index.toString());
+        field.elm.setAttribute("class", "dgui-contextMenu-item js-no-selection");
+        field.elm.textContent = field.label;
+        if(field.initValue) {
+          switch(field.type) {
+            case "switch":
+              if(field.initValue) {
+                field.value = true;
+                this.selected_items.push(field.key);
+                that.changeColor(field.elm, "#b7c6b3", "white", "#777777");
+              } break;
+          }
+        }
+        this.elm.appendChild(field.elm);
+      });
+    }
+    this.event_close = function(event) {
+      if(event.target.parentNode != that.elm) {
+        document.body.removeEventListener("mousedown", that.event_close);
+        document.body.removeChild(that.elm);
+        callback(that.selected_items);
+      }
+      else {
+        let index = event.target.dataset.index;
+        switch(that.fields[index].type) {
+          case "button":
+            callback(that.fields[index].key);
+            document.body.removeEventListener("mousedown", that.event_close);
+            document.body.removeChild(that.elm); break;
+          case "switch":
+            if(!that.selected_items.includes(that.fields[index].key)) {
+              that.changeColor(event.target, "#b7c6b3", "white", "#777777");
+              that.selected_items.push(that.fields[index].key);
+            }
+            else {
+              let itemToRemoveIndex = that.selected_items.indexOf(that.fields[index].key);
+              that.selected_items.splice(itemToRemoveIndex, 1);
+              that.changeColor(event.target,"lightgrey", "black", "#aaaaaa");
+            } break;
+        }
+      }
+    }
+    document.body.appendChild(this.elm);
+    setTimeout(() => {
+      document.body.addEventListener("mousedown", this.event_close);
+    }, 10);
   }
+
+  changeColor (elm, bg, c, bc) {
+    elm.style.backgroundColor = bg;
+    elm.style.color = c;
+    elm.style.borderColor = bc;
+  }
+}
+
+export function contextMenu(event, contextMenu_init, callback) {
+  new ContextMenu(event, contextMenu_init, callback);
 }
 
 //////////////////////////////////// Boîtes de dialogue communes dGUI ////////////////////////////////////
