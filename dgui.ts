@@ -803,21 +803,31 @@ export class modal {
 
 //////////////////////////////////// Menu contextuel dGUI (experimental) /////////////////////////////////
 
+/* --------------------------------- Interfaces ContextMenu --------------------------------------------*/
+
 interface contextMenu_field {
   // user
-  type: "switch",
+  type: "switch" | "button" | "context",
   key: string,
   label: string,
   initValue: any,
+  contextMenu: contextMenu_init,
   action: Function,
   // controller
   elm: HTMLDivElement,
   value: Boolean,
+  contextMenuObj: ContextMenu | null
+  mouseover: Boolean;
   // user & controller
 }
 
 interface contextMenu_options {
-  initPosition: "bottom" | "mouse"
+  initPosition: "bottom" | "right" | "mouse"
+}
+
+interface contextMenu_init {
+  fields: Array<contextMenu_field>,
+  options: contextMenu_options
 }
 
 /* --------------------------------- CLASS ContextMenu -------------------------------------------------*/
@@ -826,22 +836,31 @@ class ContextMenu {
 
   // Définition
   elm: HTMLDivElement;
+  parent: contextMenu_field;
   options: contextMenu_options;
   fields: Array<contextMenu_field>;
   event_close: any;
-  selected_items: Array<string>
+  selected_items: Array<string>;
+  mouseover: Boolean;
 
   // Constructeur
-  constructor(event, contextMenu_init, callback) {
+  constructor(event, contextMenu_init: contextMenu_init, callback, parent?: contextMenu_field) {
     var that = this;
     for(let property in contextMenu_init) {
       this[property] = contextMenu_init[property];
     }
+    if(parent) {
+      this.parent = parent;
+    }
+    this.mouseover = false;
     this.elm = document.createElement("div");
     this.elm.setAttribute("class", "dgui-contextMenu light-shadow");
     if(this.options) {
       if(this.options.initPosition) {
-        let htmlTargetPosition = event.currentTarget.getBoundingClientRect();
+        var htmlTargetPosition = event.currentTarget.getBoundingClientRect();
+        if(this.parent) {
+          htmlTargetPosition = this.parent.elm.getBoundingClientRect();
+        }
         switch(this.options.initPosition) {
           case "mouse":
             this.elm.style.left = event.clientX + window.scrollX + "px";
@@ -855,6 +874,12 @@ class ContextMenu {
         }
       }
     }
+    this.elm.addEventListener("mouseover", () => {
+      this.mouseover = true;
+    });
+    this.elm.addEventListener("mouseout", () => {
+      this.mouseover = false;
+    });
     this.selected_items = [];
     if(this.fields) {
       this.fields.forEach((field, index) => {
@@ -862,13 +887,42 @@ class ContextMenu {
         field.elm.setAttribute("data-index", index.toString());
         field.elm.setAttribute("class", "dgui-contextMenu-item js-no-selection");
         field.elm.textContent = field.label;
-        if(field.initValue) {
+        field.elm.addEventListener("mouseover", () => {
+          that.fields.forEach((field) => {
+            if(field.type == "context") {
+              if(field.contextMenuObj) {
+                field.contextMenuObj.event_close(event);
+                delete field.contextMenuObj;
+              }
+            }
+          });
+        });
+        if(field.type) {
           switch(field.type) {
+            case "context":
+              field.elm.addEventListener("mouseover", () => {
+                if(!field.contextMenuObj) {
+                  field.contextMenu.options.initPosition = "right";
+                  field.contextMenuObj = new ContextMenu(event, field.contextMenu, callback, field);
+                  field.elm.addEventListener("mouseout", (event) => {
+                    if(field.contextMenuObj) {
+                      setTimeout(() => {
+                        if(field.contextMenuObj) {
+                          if(!field.contextMenuObj.mouseover) {
+                            field.contextMenuObj.event_close(event);
+                            delete field.contextMenuObj;
+                          }
+                        }
+                      }, 10);
+                    }
+                  });
+                }
+              }); break;
             case "switch":
               if(field.initValue) {
                 field.value = true;
                 this.selected_items.push(field.key);
-                that.changeColor(field.elm, "#b7c6b3", "white", "#777777");
+                that.changeColor(field.elm, "rgba(93, 78, 109, 0.5)", "white");
               } break;
           }
         }
@@ -890,13 +944,13 @@ class ContextMenu {
             document.body.removeChild(that.elm); break;
           case "switch":
             if(!that.selected_items.includes(that.fields[index].key)) {
-              that.changeColor(event.target, "#b7c6b3", "white", "#777777");
+              that.changeColor(event.target, "rgba(93, 78, 109, 0.5)", "white");
               that.selected_items.push(that.fields[index].key);
             }
             else {
               let itemToRemoveIndex = that.selected_items.indexOf(that.fields[index].key);
               that.selected_items.splice(itemToRemoveIndex, 1);
-              that.changeColor(event.target,"lightgrey", "black", "#aaaaaa");
+              that.changeColor(event.target,"rgba(124, 110, 127, 0)", "black");
             } break;
         }
       }
@@ -907,10 +961,9 @@ class ContextMenu {
     }, 10);
   }
 
-  changeColor (elm, bg, c, bc) {
+  changeColor (elm, bg, c) {
     elm.style.backgroundColor = bg;
     elm.style.color = c;
-    elm.style.borderColor = bc;
   }
 }
 
