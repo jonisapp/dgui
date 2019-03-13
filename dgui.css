@@ -1,5 +1,5 @@
 .dgui-contextMenu {
-    background-color: rgba(189, 192, 196, 0.8);
+    background-color: rgba(189, 192, 196, 0.9);
     position: absolute;
     border-width: 1px 1px 1px 1px;
     border-color: rgba(82, 82, 82, 0.7);
@@ -21,6 +21,15 @@
     background-color: rgba(124, 110, 127, 0.4);
     color: white;
 }
+
+.dgui_arrow-right {
+    display: inline-block;
+    width: 0; 
+    height: 0; 
+    border-top: 5px solid transparent;
+    border-bottom: 5px solid transparent;
+    border-left: 5px solid black;
+  }
 
 .dgui-left-tab {
 	display: flex;
@@ -101,7 +110,7 @@
     border-width: 1px 1px 1px 0px;
     margin-top: 0px;
     border-radius: 0px 10px 10px 0px;
-    background-color: lightgrey;
+    background-color: #e5e5e5;
     text-align: left;
     font-family: 'robotoRegular';
 }

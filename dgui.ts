@@ -1,10 +1,53 @@
-// A utiliser dans le cadre d'une application Meteor pour profiter des avantages de la réactivité
 
-// async function enableMeteorReactivity() {
-//   const { Tracker } = await import('meteor/tracker');
-// }
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////// Basic components ////////////////////////////////////////////////////
 
-/////////////////////////////////////////////////////////////////
+/* --------------------------------- Utility functions -------------------------------------------------*/
+
+// User
+
+export function copyToClipboard(target: string | HTMLElement) {
+  var target_elm = null;
+  if(typeof target == "string") {
+    target_elm = document.createElement("div");
+    target_elm.innerHTML = target;
+  }
+  else if(target instanceof HTMLElement) {
+    target_elm = target;
+  }
+  else {
+    alert(new Error("copyToClipboad requires either a string either an HTMLElement as input"));
+    return false;
+  }
+  document.body.appendChild(target_elm);
+	let range = document.createRange();
+	range.selectNode(target_elm);
+	window.getSelection().removeAllRanges();
+	window.getSelection().addRange(range);
+	document.execCommand("copy");
+  window.getSelection().removeAllRanges();
+  document.body.removeChild(target_elm);
+}
+
+// Controller
+
+export function disableDefaultContextmenu(elm: any) {
+  elm.addEventListener("contextmenu", (e) => {
+    e.preventDefault();
+  })
+}
+
+export function disableMouseSelection(elm: any) {
+  elm.addEventListener("selectstart", (e) => {
+    elm.preventDefault;
+  });
+}
+
+export function setDefaultCursor(elm: any) {
+  elm.style.cursor = "default";
+}
+
+/* --------------------------------- CLASS Translucent -------------------------------------------------*/
 
 class Translucent {
   elm: HTMLElement;
@@ -69,6 +112,7 @@ class Translucent {
   }
 }
 
+/* --------------------------------- CLASS Button ------------------------------------------------------*/
 
 class Button {
   elm: HTMLElement;
@@ -101,6 +145,21 @@ class Button {
   }
 }
 
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////// Fields dGUI /////////////////////////////////////////////////////////
+
+/* --------------------------------- Interfaces Field --------------------------------------------------*/
+
+interface radioButton {
+  // user
+  label: string;
+  value: string;
+  // controller
+  input_elm: HTMLInputElement;
+  label_elm: HTMLLabelElement;
+}
+
+/* --------------------------------- CLASS Field -------------------------------------------------------*/
 
 class Field {
   // user
@@ -156,8 +215,8 @@ class Field {
       break;
       case "message":
       this.input_elm = document.createElement("div");
-      this.input_elm.setAttribute("style", "margin-top: 10px")
-      this.input_elm.style.cursor = "default";
+      setDefaultCursor(this.input_elm);
+      this.input_elm.setAttribute("style", "margin-top: 10px");
       this.input_elm.style.textAlign = "left";
       this.input_elm.innerHTML = field.message; break;
       case "button":
@@ -241,24 +300,10 @@ class Field {
   }
 }
 
-interface radioButton {
-  // user
-  label: string;
-  value: string;
-  // controller
-  input_elm: HTMLInputElement;
-  label_elm: HTMLLabelElement;
-}
-interface button {
-  action: string;
-  value: string;
-  BSClass: string;
-}
-interface formDisplay {
-  maxWidth: number;
-  maxHeight: number;
-  containerWidth: number;
-}
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////// MDIs dGUI ///////////////////////////////////////////////////////////
+
+/* --------------------------------- Interfaces MDI ----------------------------------------------------*/
 
 interface MDI_options {
   containerWidth: number;
@@ -266,6 +311,8 @@ interface MDI_options {
   menuItemWidth: number;
   menuLayout: string;
 }
+
+/* --------------------------------- CLASS MDI ---------------------------------------------------------*/
 
 class MDI {
   elm: HTMLDivElement;
@@ -412,13 +459,29 @@ class MDI {
   }
 }
 
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////// Form dGUI ///////////////////////////////////////////////////////////
 
-////////////////////////////////// Classe FormPannel //////////////////////////////////
+/* --------------------------------- Interfaces FormPannel ---------------------------------------------*/
+
+interface formDisplay {
+  maxWidth: number;
+  maxHeight: number;
+  containerWidth: number;
+}
+
+interface button {
+  action: string;
+  value: string;
+  BSClass: string;
+}
+
+/* --------------------------------- CLASS FormPannel --------------------------------------------------*/
 
 class FormPannel {
   id: string;
   type: string
-  elm: HTMLDivElement;        //dom element de formPannel
+  elm: HTMLDivElement;
   parent: modal;
   title: string;
   fields: Array<Field>;
@@ -467,7 +530,8 @@ class FormPannel {
     let formPannelHeader = document.createElement("div");
     formPannelHeader.setAttribute("style", "padding: 7px");
     let formPannelTitle = document.createElement("div");
-    formPannelTitle.setAttribute("style", "font-size: 18px; font-weight: bold; color: rgba(0, 0, 0, 0.86); cursor: default");
+    setDefaultCursor(formPannelTitle);
+    formPannelTitle.setAttribute("style", "font-size: 18px; font-weight: bold; color: rgba(0, 0, 0, 0.86);");
     formPannelTitle.textContent = this.title;
     formPannelHeader.appendChild(formPannelTitle);
     var formPannelBody = document.createElement("div");
@@ -801,7 +865,8 @@ export class modal {
   }
 }
 
-//////////////////////////////////// Menu contextuel dGUI (experimental) /////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////// Contextual menu dGUI (experimental) /////////////////////////////////
 
 /* --------------------------------- Interfaces ContextMenu --------------------------------------------*/
 
@@ -815,14 +880,12 @@ interface contextMenu_field {
   action: Function,
   // controller
   elm: HTMLDivElement,
-  value: Boolean,
+  value: boolean,
   contextMenuObj: ContextMenu | null
-  mouseover: Boolean;
-  // user & controller
 }
 
 interface contextMenu_options {
-  initPosition: "bottom" | "right" | "mouse"
+  initPosition?: "bottom" | "right" | "mouse"
 }
 
 interface contextMenu_init {
@@ -830,31 +893,52 @@ interface contextMenu_init {
   options: contextMenu_options
 }
 
+interface contextMenu_parentAttributes {
+  parent: contextMenu_field,
+  parent_menu: ContextMenu,
+  target: any
+}
+
 /* --------------------------------- CLASS ContextMenu -------------------------------------------------*/
 
 class ContextMenu {
 
-  // Définition
+  //                                              - Définition -
   elm: HTMLDivElement;
+  parent_menu: ContextMenu;
   parent: contextMenu_field;
+  target: any;
   options: contextMenu_options;
   fields: Array<contextMenu_field>;
   event_close: any;
+  close: any;
   selected_items: Array<string>;
-  mouseover: Boolean;
+  mouseover: boolean;
+  hasSubMenu: boolean;
+  subMenuActive: boolean;
 
-  // Constructeur
-  constructor(event, contextMenu_init: contextMenu_init, callback, parent?: contextMenu_field) {
+  //                                              - Constructor -
+  constructor(event, contextMenu_init: contextMenu_init, callback, parentAttributes?: contextMenu_parentAttributes) {
+    // Attributs initialization
     var that = this;
+    this.target = event.currentTarget;
     for(let property in contextMenu_init) {
       this[property] = contextMenu_init[property];
     }
-    if(parent) {
-      this.parent = parent;
+    if(parentAttributes) {
+      this.parent = parentAttributes.parent;
+      this.target = parentAttributes.target;
+      this.parent_menu = parentAttributes.parent_menu;
+      this.parent_menu.subMenuActive = true;
     }
+    this.selected_items = [];
     this.mouseover = false;
+    this.hasSubMenu = false;
+    this.subMenuActive = false;
+    //                                            - Initial DOM setup -
     this.elm = document.createElement("div");
     this.elm.setAttribute("class", "dgui-contextMenu light-shadow");
+    this.elm.setAttribute("data-type", "dgui_contextMenu")
     if(this.options) {
       if(this.options.initPosition) {
         var htmlTargetPosition = event.currentTarget.getBoundingClientRect();
@@ -870,89 +954,167 @@ class ContextMenu {
             this.elm.style.top = htmlTargetPosition.bottom + window.scrollY + "px"; break;
           case "right":
             this.elm.style.left = htmlTargetPosition.right + window.scrollX + "px";
-            this.elm.style.top = htmlTargetPosition.top + window.scrollX + "px"; break;
+            this.elm.style.top = htmlTargetPosition.top + window.scrollY + "px"; break;
         }
       }
     }
+    //                                            - Initial events -
+    disableDefaultContextmenu(this.elm);
+    disableMouseSelection(this.elm);
     this.elm.addEventListener("mouseover", () => {
       this.mouseover = true;
     });
     this.elm.addEventListener("mouseout", () => {
       this.mouseover = false;
     });
-    this.selected_items = [];
     if(this.fields) {
       this.fields.forEach((field, index) => {
+        //                                        - Field init attributs
+        if(field.contextMenu) {
+          field.type = "context";
+        }
+        else {
+          if(!field.type) {
+            field.type = "button";
+          }
+        }
+        //                                        - Fields init display -
         field.elm = document.createElement("div");
         field.elm.setAttribute("data-index", index.toString());
-        field.elm.setAttribute("class", "dgui-contextMenu-item js-no-selection");
-        field.elm.textContent = field.label;
-        field.elm.addEventListener("mouseover", () => {
-          that.fields.forEach((field) => {
-            if(field.type == "context") {
-              if(field.contextMenuObj) {
-                field.contextMenuObj.event_close(event);
-                delete field.contextMenuObj;
+        field.elm.setAttribute("class", "dgui-contextMenu-item");
+        if(field.type != "context") {
+          field.elm.textContent = field.label;
+        }
+        else {
+          that.hasSubMenu = true;
+          field.elm.setAttribute("style", "");
+          let label = document.createElement("div");
+          label.style.display = "inline-block";
+          label.textContent = field.label;
+          let arrow = document.createElement("div");
+          arrow.setAttribute("class", "dgui_arrow-right");
+          let arrow_container = document.createElement("div");
+          arrow_container.setAttribute("data-type", "arrow");
+          arrow_container.setAttribute("style", "float: right");
+          arrow_container.appendChild(arrow);
+          field.elm.appendChild(label);
+          field.elm.appendChild(arrow_container);
+        }
+        if(field.type == "switch") {
+          if(field.initValue) {
+            field.value = true;
+            this.selected_items.push(field.key);
+            that.changeColor(field.elm, "rgba(93, 78, 109, 0.5)", "white");
+          }
+          if(field.action) {
+            field.elm.addEventListener("click", (e) => {
+              field.action(field.value);
+            });
+          }
+        }
+        //                                        - Fields init events -
+        if(field.type != "context") {
+          field.elm.addEventListener("mouseover", () => {
+            that.fields.forEach((field) => {
+              if(field.type == "context") {
+                if(field.contextMenuObj) {
+                  field.contextMenuObj.close(event);
+                  delete field.contextMenuObj;
+                }
               }
+            });
+          });
+          if(field.type == "switch") {
+            field.elm.addEventListener("click", (event) => {
+              let index = event.target.dataset.index;
+              if(!that.selected_items.includes(that.fields[index].key)) {
+                field.value = true;
+                that.changeColor(event.target, "rgba(93, 78, 109, 0.5)", "white");
+                that.selected_items.push(that.fields[index].key);
+              }
+              else {
+                field.value = false;
+                let itemToRemoveIndex = that.selected_items.indexOf(that.fields[index].key);
+                that.selected_items.splice(itemToRemoveIndex, 1);
+                that.changeColor(event.target, "rgba(124, 110, 127, 0)", "black");
+              }
+              console.log("événement déclencé pour un switch");
+            });
+            console.log(field);
+            field.elm.addEventListener("mouseover", (event) => {
+              if(!field.value) {
+                that.changeColor(event.target, "rgba(124, 110, 127, 0.4)", "white");
+              }
+            });
+            field.elm.addEventListener("mouseout", (event) => {
+              if(!field.value) {
+                that.changeColor(event.target, "rgba(112 ,112 ,112, 0)", "black");
+              }
+            });
+          }
+          else if(field.type == "button") {
+            field.elm.addEventListener("click", (event) => {
+              let index = event.target.dataset.index;
+              callback(that.fields[index].key);
+              if(that.fields[index].action) {
+                that.fields[index].action(that.target);
+              }
+              document.body.removeEventListener("mousedown", that.event_close);
+              document.body.removeChild(that.elm);
+              if(that.parent_menu) {
+                that.parent_menu.close();
+              }
+            });
+          }
+        }
+        else {
+          field.elm.addEventListener("mouseover", () => {
+            if(!field.contextMenuObj) {
+              if(!field.contextMenu.options) { field.contextMenu.options = {}; }
+              if(!field.contextMenu.options.initPosition) { field.contextMenu.options.initPosition = "right"; }
+              field.contextMenuObj = new ContextMenu(event, field.contextMenu, callback, {parent: field, parent_menu: that, target: that.target});
+              field.elm.addEventListener("mouseleave", (event) => {
+                event.stopPropagation();
+                if(field.contextMenuObj) {
+                  setTimeout(() => {
+                    if(field.contextMenuObj) {
+                      if(!field.contextMenuObj.mouseover) {
+                        field.contextMenuObj.close();
+                        delete field.contextMenuObj;
+                      }
+                    }
+                  }, 10);
+                }
+              });
             }
           });
-        });
-        if(field.type) {
-          switch(field.type) {
-            case "context":
-              field.elm.addEventListener("mouseover", () => {
-                if(!field.contextMenuObj) {
-                  field.contextMenu.options.initPosition = "right";
-                  field.contextMenuObj = new ContextMenu(event, field.contextMenu, callback, field);
-                  field.elm.addEventListener("mouseout", (event) => {
-                    if(field.contextMenuObj) {
-                      setTimeout(() => {
-                        if(field.contextMenuObj) {
-                          if(!field.contextMenuObj.mouseover) {
-                            field.contextMenuObj.event_close(event);
-                            delete field.contextMenuObj;
-                          }
-                        }
-                      }, 10);
-                    }
-                  });
-                }
-              }); break;
-            case "switch":
-              if(field.initValue) {
-                field.value = true;
-                this.selected_items.push(field.key);
-                that.changeColor(field.elm, "rgba(93, 78, 109, 0.5)", "white");
-              } break;
-          }
         }
         this.elm.appendChild(field.elm);
       });
     }
+    this.close = function() {
+      console.log("close");
+      document.body.removeEventListener("mousedown", that.event_close);
+      document.body.removeChild(that.elm);
+      callback(that.selected_items);
+    }
     this.event_close = function(event) {
-      if(event.target.parentNode != that.elm) {
-        document.body.removeEventListener("mousedown", that.event_close);
-        document.body.removeChild(that.elm);
-        callback(that.selected_items);
-      }
-      else {
-        let index = event.target.dataset.index;
-        switch(that.fields[index].type) {
-          case "button":
-            callback(that.fields[index].key);
-            document.body.removeEventListener("mousedown", that.event_close);
-            document.body.removeChild(that.elm); break;
-          case "switch":
-            if(!that.selected_items.includes(that.fields[index].key)) {
-              that.changeColor(event.target, "rgba(93, 78, 109, 0.5)", "white");
-              that.selected_items.push(that.fields[index].key);
+      event.stopPropagation();
+      var eventInDgui = false;
+      let target_test = event.target;
+      do {
+        if(target_test.dataset) {
+          if(target_test.dataset.type) {
+            if(target_test.dataset.type == "dgui_contextMenu") {
+              console.log("event déclencé dans dgui");
+              eventInDgui = true;
             }
-            else {
-              let itemToRemoveIndex = that.selected_items.indexOf(that.fields[index].key);
-              that.selected_items.splice(itemToRemoveIndex, 1);
-              that.changeColor(event.target,"rgba(124, 110, 127, 0)", "black");
-            } break;
+          }
         }
+        target_test = target_test.parentNode;
+      } while(target_test);
+      if(!eventInDgui) {
+        that.close();
       }
     }
     document.body.appendChild(this.elm);
@@ -971,11 +1133,14 @@ export function contextMenu(event, contextMenu_init, callback) {
   new ContextMenu(event, contextMenu_init, callback);
 }
 
-//////////////////////////////////// Boîtes de dialogue communes dGUI ////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////// Common dialogbox dGUI ///////////////////////////////////////////////
 
-export function alert(message, title="Information", callback) {
+export function alert(message: string | Error, title?: string, callback?: Function) {
+  callback = callback || function(){};
+  message = (message instanceof Error) ? message.message : message;
   new modal({
-    title: title,
+    title: title || "Information",
     fields: [{type: "message", message: message}],
     footer: [{action: "quit", value: "D'accord", BSClass: "btn-success"}]
   }, callback);
