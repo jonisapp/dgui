@@ -31,6 +31,20 @@ export function copyToClipboard(target: string | HTMLElement) {
 
 // Controller
 
+export function elementBelongsToDataType(element: any, dataType: string) {
+  do {
+    if(element.dataset) {
+      if(element.dataset.type) {
+        if(element.dataset.type == dataType) {
+          return true;
+        }
+      }
+    }
+    element = element.parentNode;
+  } while(element);
+  return false;
+}
+
 export function disableDefaultContextmenu(elm: any) {
   elm.addEventListener("contextmenu", (e) => {
     e.preventDefault();
@@ -39,7 +53,7 @@ export function disableDefaultContextmenu(elm: any) {
 
 export function disableMouseSelection(elm: any) {
   elm.addEventListener("selectstart", (e) => {
-    elm.preventDefault;
+    e.preventDefault();
   });
 }
 
@@ -866,18 +880,20 @@ export class modal {
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////// Contextual menu dGUI (experimental) /////////////////////////////////
+//////////////////////////////////// Contextual menu dGUI ////////////////////////////////////////////////
 
 /* --------------------------------- Interfaces ContextMenu --------------------------------------------*/
 
 interface contextMenu_field {
   // user
-  type: "switch" | "button" | "context",
-  key: string,
+  type?: "switch" | "button" | "context",
+  key?: string,
+  group?: string,
   label: string,
-  initValue: any,
-  contextMenu: contextMenu_init,
-  action: Function,
+  initValue?: any,
+  contextMenu?: contextMenu_init,
+  action?: Function,
+  switchLock?: boolean,
   // controller
   elm: HTMLDivElement,
   value: boolean,
@@ -903,21 +919,21 @@ interface contextMenu_parentAttributes {
 
 class ContextMenu {
 
-  //                                              - Définition -
+  /*                                              - Définition -                                        */
+  // attributs
   elm: HTMLDivElement;
   parent_menu: ContextMenu;
   parent: contextMenu_field;
   target: any;
   options: contextMenu_options;
   fields: Array<contextMenu_field>;
-  event_close: any;
-  close: any;
   selected_items: Array<string>;
   mouseover: boolean;
-  hasSubMenu: boolean;
-  subMenuActive: boolean;
+  // methods
+  event_close: any;
+  close: any;
+  /*                                              - Constructor -                                       */
 
-  //                                              - Constructor -
   constructor(event, contextMenu_init: contextMenu_init, callback, parentAttributes?: contextMenu_parentAttributes) {
     // Attributs initialization
     var that = this;
@@ -929,12 +945,9 @@ class ContextMenu {
       this.parent = parentAttributes.parent;
       this.target = parentAttributes.target;
       this.parent_menu = parentAttributes.parent_menu;
-      this.parent_menu.subMenuActive = true;
     }
     this.selected_items = [];
     this.mouseover = false;
-    this.hasSubMenu = false;
-    this.subMenuActive = false;
     //                                            - Initial DOM setup -
     this.elm = document.createElement("div");
     this.elm.setAttribute("class", "dgui-contextMenu light-shadow");
@@ -969,16 +982,18 @@ class ContextMenu {
     });
     if(this.fields) {
       this.fields.forEach((field, index) => {
-        //                                        - Field init attributs
+        /*                                        - Field init attributs -                              */
         if(field.contextMenu) {
           field.type = "context";
         }
-        else {
-          if(!field.type) {
-            field.type = "button";
-          }
+        else if(field.group) {
+          field.type = "switch";
+          field.switchLock = (field.switchLock) ? field.switchLock : true;
         }
-        //                                        - Fields init display -
+        else if(!field.type) {
+          field.type = "button";
+        }
+        /*                                        - Fields init display -                               */
         field.elm = document.createElement("div");
         field.elm.setAttribute("data-index", index.toString());
         field.elm.setAttribute("class", "dgui-contextMenu-item");
@@ -986,7 +1001,6 @@ class ContextMenu {
           field.elm.textContent = field.label;
         }
         else {
-          that.hasSubMenu = true;
           field.elm.setAttribute("style", "");
           let label = document.createElement("div");
           label.style.display = "inline-block";
@@ -1006,19 +1020,14 @@ class ContextMenu {
             this.selected_items.push(field.key);
             that.changeColor(field.elm, "rgba(93, 78, 109, 0.5)", "white");
           }
-          if(field.action) {
-            field.elm.addEventListener("click", (e) => {
-              field.action(field.value);
-            });
-          }
         }
-        //                                        - Fields init events -
+        /*                                        - Fields init events -                                */
         if(field.type != "context") {
           field.elm.addEventListener("mouseover", () => {
             that.fields.forEach((field) => {
               if(field.type == "context") {
                 if(field.contextMenuObj) {
-                  field.contextMenuObj.close(event);
+                  field.contextMenuObj.close();
                   delete field.contextMenuObj;
                 }
               }
@@ -1027,6 +1036,7 @@ class ContextMenu {
           if(field.type == "switch") {
             field.elm.addEventListener("click", (event) => {
               let index = event.target.dataset.index;
+              // main callback
               if(!that.selected_items.includes(that.fields[index].key)) {
                 field.value = true;
                 that.changeColor(event.target, "rgba(93, 78, 109, 0.5)", "white");
@@ -1038,9 +1048,14 @@ class ContextMenu {
                 that.selected_items.splice(itemToRemoveIndex, 1);
                 that.changeColor(event.target, "rgba(124, 110, 127, 0)", "black");
               }
-              console.log("événement déclencé pour un switch");
+              // action
+              if(field.action) {
+                field.action(that.target, field.value);
+              }
+              if(!field.switchLock) {
+                that.close(true);
+              }
             });
-            console.log(field);
             field.elm.addEventListener("mouseover", (event) => {
               if(!field.value) {
                 that.changeColor(event.target, "rgba(124, 110, 127, 0.4)", "white");
@@ -1055,15 +1070,16 @@ class ContextMenu {
           else if(field.type == "button") {
             field.elm.addEventListener("click", (event) => {
               let index = event.target.dataset.index;
-              callback(that.fields[index].key);
               if(that.fields[index].action) {
                 that.fields[index].action(that.target);
               }
-              document.body.removeEventListener("mousedown", that.event_close);
-              document.body.removeChild(that.elm);
+              if(that.fields[index].key) {
+                that.selected_items.push(that.fields[index].key);
+              }
               if(that.parent_menu) {
                 that.parent_menu.close();
               }
+              that.close(true);
             });
           }
         }
@@ -1092,28 +1108,17 @@ class ContextMenu {
         this.elm.appendChild(field.elm);
       });
     }
-    this.close = function() {
-      console.log("close");
+    /*                                            - Methods -                                           */
+    this.close = function(fireCallback?) {
       document.body.removeEventListener("mousedown", that.event_close);
       document.body.removeChild(that.elm);
-      callback(that.selected_items);
+      if(fireCallback) {
+        callback(that.selected_items);
+      }
     }
     this.event_close = function(event) {
       event.stopPropagation();
-      var eventInDgui = false;
-      let target_test = event.target;
-      do {
-        if(target_test.dataset) {
-          if(target_test.dataset.type) {
-            if(target_test.dataset.type == "dgui_contextMenu") {
-              console.log("event déclencé dans dgui");
-              eventInDgui = true;
-            }
-          }
-        }
-        target_test = target_test.parentNode;
-      } while(target_test);
-      if(!eventInDgui) {
+      if(!elementBelongsToDataType(event.target, "dgui_contextMenu")) {
         that.close();
       }
     }
