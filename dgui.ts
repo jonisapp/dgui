@@ -16,7 +16,7 @@ export function copyToClipboard(target: string | HTMLElement) {
     target_elm = target;
   }
   else {
-    alert(new Error("copyToClipboad requires either a string either an HTMLElement as input"));
+    alert(new Error("copyToClipboad requires either a string or a HTMLElement as input"));
     return false;
   }
   document.body.appendChild(target_elm);
@@ -176,8 +176,10 @@ interface radioButton {
 /* --------------------------------- CLASS Field -------------------------------------------------------*/
 
 class Field {
+
+  /*                                              - Définition -                                        */
   // user
-  type: string;
+  type: "message" | "button" | "text" | "choice" | "switch";
   key: string;
   name: string;
   label: string;
@@ -185,7 +187,9 @@ class Field {
   size: number;
   action: any;
   BSClass: string;
+  group: string;
   // constroller
+  parent?: FormPannel;
   input_elm: any;
   button_elm: HTMLButtonElement;
   label_elm: HTMLLabelElement;
@@ -195,15 +199,21 @@ class Field {
   initValue: string | boolean | number;
   radioButtons: Array<radioButton>;
 
-  constructor(field) {
+  /*                                              - Constructor -                                       */
+  constructor(field, parent?: FormPannel) {
     var that = this;
     for(let attribut in field) {
       this[attribut] = field[attribut];
     }
-    //Par défaut un champs dont le type n'est pas définit sera un champs de type text
+    if(parent) {
+      this.parent = parent;
+    }
     if(!field.type) {
       field.type = "text";
       this.type = "text";
+    }
+    if(field.group) {
+      field.type = "switch";
     }
     switch(field.type) {
       case "switch":
@@ -218,6 +228,16 @@ class Field {
       this.input_elm.addEventListener("click", (e) => {
         let elm = e.currentTarget;
         if(!that.value) {
+          if(that.parent && that.group) {
+            that.parent.groups.forEach((group) => {
+              if(group.name == that.group) {
+                group.fields.forEach((field) => {
+                  field.value = false;
+                  field.input_elm.setAttribute("class", "invoice-leftMenu-button");
+                });
+              }
+            });
+          }
           elm.setAttribute("class", "invoice-leftMenu-button-selected");
           that.value = true;
         }
@@ -239,9 +259,11 @@ class Field {
       this.button_elm.textContent = this.label;
       this.button_elm.addEventListener("click", that.action);
       case "text": case "password":
-      this.label_elm = document.createElement("label");
-      this.label_elm.textContent = field.label;
-      this.label_elm.setAttribute("style", "text-align: left");
+      if(field.label) {
+        this.label_elm = document.createElement("label");
+        this.label_elm.textContent = field.label;
+        this.label_elm.setAttribute("style", "text-align: left");
+      }
       this.input_elm = document.createElement("input");
       this.input_elm.setAttribute("type", field.type);
       this.input_elm.setAttribute("class", "form form-control");
@@ -278,7 +300,12 @@ class Field {
       } break;
     }
     this.elm = document.createElement("div");
-    this.elm.setAttribute("class", "dgui-form-pannel-element");
+    if(field.type != "message") {
+      this.elm.setAttribute("class", "dgui-form-pannel-element");
+    }
+    else {
+      this.elm.setAttribute("class", "dgui-form-pannel-element-message");
+    }
     if(field.size) {
       this.elm.style.flex = field.size;
     }
@@ -478,16 +505,22 @@ class MDI {
 
 /* --------------------------------- Interfaces FormPannel ---------------------------------------------*/
 
-interface formDisplay {
+interface formPannel_options {
   maxWidth: number;
   maxHeight: number;
   containerWidth: number;
+  allFieldsMandatory: boolean;
 }
 
 interface button {
   action: string;
   value: string;
   BSClass: string;
+}
+
+interface formPannel_fieldGroup {
+  name: string;
+  fields: Array<Field>
 }
 
 /* --------------------------------- CLASS FormPannel --------------------------------------------------*/
@@ -500,11 +533,13 @@ class FormPannel {
   title: string;
   fields: Array<Field>;
   footer: Array<button>;
-  display: formDisplay;
+  options: formPannel_options;
   // user & controller
   errorMessage_elm: any;
   MDI: MDI;
   footer_elm: HTMLDivElement;
+  // controller
+  groups: Array<formPannel_fieldGroup>;
 
   constructor(properties, parent) {
     var that = this;
@@ -512,6 +547,7 @@ class FormPannel {
       this[property] = properties[property];
     }
     this.parent = parent;
+    this.groups = [];
     this.elm = document.createElement("div");
     this.elm.setAttribute("style", "background-color: #B9BAB8; padding: 5px; padding-top: 0px; border-radius: 7px; margin-bottom: 30px; border: 1px solid #B2B2B2;");
     this.elm.addEventListener("keydown", function(e) {
@@ -524,12 +560,6 @@ class FormPannel {
       this.MDI = new MDI(this.MDI, this);
     }
     
-    // Génération des Fields
-    // if(typeof this.fields !== "undefined") {
-    //   for(let i=0; i<this.fields.length; ++i) {
-    //     this.fields[i] = new Field(this.fields[i]);
-    //   }
-    // }
     let scrollElm = document.createElement("div");
     //scrollElm.style.height = this.options.containerHeight-60+"px";
     scrollElm.style.overflow = "auto";
@@ -551,9 +581,9 @@ class FormPannel {
     var formPannelBody = document.createElement("div");
     this.errorMessage_elm = document.createElement("div");
     this.errorMessage_elm.setAttribute("style", "display: none; background-color: #e26c6c; color: white; border-radius: 3px; font-weight: normal; margin: 5px; padding: 5px;");
-    if(this.display) {
-      if(this.display.containerWidth) {
-        this.errorMessage_elm.style.width = this.display.containerWidth+150+"px";
+    if(this.options) {
+      if(this.options.containerWidth) {
+        this.errorMessage_elm.style.width = this.options.containerWidth+150+"px";
       }
     }
     formPannelBody.appendChild(this.errorMessage_elm);
@@ -591,19 +621,40 @@ class FormPannel {
   }
 
   generateFields(fieldsContainer, fields, scrollElm) {
+    var that = this;
     if(fields) {
       fields.forEach(function(field_s) {
         if(Array.isArray(field_s)) {
           var formPannelLayout = document.createElement("div");
-          formPannelLayout.setAttribute("class", "form-pannel-layout");
-          var reduce_padding = (field_s.length > 3) ? true : false;
+          formPannelLayout.setAttribute("class", "dgui-form-pannel-layout");
+          var reduce_padding = (field_s.length > 2) ? true : false;
           if(reduce_padding) {
             formPannelLayout.style.paddingLeft = 15+"px";
             formPannelLayout.style.paddingRight = 15+"px";
           }
           var fields_inputs = [];
           field_s.forEach(function(field) {
-            field = new Field(field);
+            field = new Field(field, that);
+            // Groups
+            if(field.group) {
+              var group_index= -1;
+              that.groups.forEach((group, i) => {
+                if(group.name == field.group) {
+                  group_index = i;
+                }
+              });
+              if(group_index != -1) {
+                that.groups[group_index].fields.push(field);
+              }
+              else {
+                that.groups.push({name: field.group, fields: []});
+                that.groups.forEach((group) => {
+                  if(group.name == field.group) {
+                    group.fields.push(field);
+                  }
+                })
+              }
+            }
             fields_inputs.push({input: field.input_elm, max: (field.max) ? field.max : null});
             fieldsContainer.fields.push(field);
             if(reduce_padding) {
@@ -632,28 +683,29 @@ class FormPannel {
           scrollElm.appendChild(formPannelLayout);
         }
         else {
-          let field = new Field(field_s);
+          let field = new Field(field_s, that);
           fieldsContainer.fields.push(field);
           scrollElm.appendChild(field.elm);
         }
       });
     }
+    console.log(this.groups);
   }
   
   initDisplay() {
-    if(typeof this.display !== "undefined") {
-      for(let attribut in this.display) {
+    if(this.options) {
+      for(let attribut in this.options) {
         switch(attribut) {
           case "width":
-            this.elm.style.width = this.display[attribut]+"px"; break;
+            this.elm.style.width = this.options[attribut]+"px"; break;
           case "height":
-            this.elm.style.height = this.display[attribut]+"px"; break;
+            this.elm.style.height = this.options[attribut]+"px"; break;
           case "maxWidth":
-            this.elm.style.maxWidth = this.display[attribut]+"px"; break;
+            this.elm.style.maxWidth = this.options[attribut]+"px"; break;
           case "maxHeight":
-            this.elm.style.maxHeight = this.display[attribut]+"px"; break;
+            this.elm.style.maxHeight = this.options[attribut]+"px"; break;
           case "containerWidth":
-            //this.sections_containerElm.style.width = this.display[attribut]+"px"; break;
+            this.elm.style.width = this.options[attribut]+"px"; break;
         }
       }
     }
@@ -697,10 +749,13 @@ class FormPannel {
   submit() {
     var that = this;
     let values = [];
-    if(typeof this.fields !== "undefined") {
+    if(this.fields) {
       values.push(this.submitFields(this.fields));
     }
-    if(typeof this.MDI !== "undefined") {
+    if(this.groups) {
+      values.push(this.submitGroups(this.groups));
+    }
+    if(this.MDI) {
       this.MDI.sections.map(function(section) {
         if(typeof section.key !== "undefined") {
           if(typeof section.fields !== "undefined") {
@@ -752,11 +807,28 @@ class FormPannel {
     });
   }
 
+  submitGroups(groups) {
+    let values = []
+    groups.forEach((group) => {
+      group.fields.forEach((field) => {
+        if(field.value) {
+          let field_result = {};
+          field_result[group.name] = field.key;
+          values.push(field_result);
+        }
+      });
+    });
+    let proper_values = this.properType(values);
+    return proper_values;
+  }
+
   submitFields(fields) {
     var that = this;
     var values = [];
     fields.forEach(function(field) {
-      that.submitField(field, values);
+      if(!field.group) {
+        that.submitField(field, values);
+      }
     });
     let proper_values = this.properType(values);
     return proper_values;
@@ -892,6 +964,7 @@ interface contextMenu_field {
   label: string,
   initValue?: any,
   contextMenu?: contextMenu_init,
+  condition?: boolean,
   action?: Function,
   switchLock?: boolean,
   // controller
@@ -901,7 +974,7 @@ interface contextMenu_field {
 }
 
 interface contextMenu_options {
-  initPosition?: "bottom" | "right" | "mouse"
+  initPosition?: "bottom" | "right" | "left" | "mouse"
 }
 
 interface contextMenu_init {
@@ -931,6 +1004,7 @@ class ContextMenu {
   mouseover: boolean;
   // methods
   event_close: any;
+  recursive_close: any;
   close: any;
   /*                                              - Constructor -                                       */
 
@@ -967,7 +1041,7 @@ class ContextMenu {
             this.elm.style.top = htmlTargetPosition.bottom + window.scrollY + "px"; break;
           case "right":
             this.elm.style.left = htmlTargetPosition.right + window.scrollX + "px";
-            this.elm.style.top = htmlTargetPosition.top + window.scrollY + "px"; break;
+            this.elm.style.top = htmlTargetPosition.top + window.scrollY + "px"; break;       
         }
       }
     }
@@ -995,13 +1069,15 @@ class ContextMenu {
         }
         /*                                        - Fields init display -                               */
         field.elm = document.createElement("div");
+        if(typeof field.condition !== "undefined") {
+          field.elm.style.display = (field.condition) ? "block" : "none";
+        }
         field.elm.setAttribute("data-index", index.toString());
         field.elm.setAttribute("class", "dgui-contextMenu-item");
         if(field.type != "context") {
           field.elm.textContent = field.label;
         }
         else {
-          field.elm.setAttribute("style", "");
           let label = document.createElement("div");
           label.style.display = "inline-block";
           label.textContent = field.label;
@@ -1053,6 +1129,7 @@ class ContextMenu {
                 field.action(that.target, field.value);
               }
               if(!field.switchLock) {
+                that.recursive_close();
                 that.close(true);
               }
             });
@@ -1076,9 +1153,7 @@ class ContextMenu {
               if(that.fields[index].key) {
                 that.selected_items.push(that.fields[index].key);
               }
-              if(that.parent_menu) {
-                that.parent_menu.close();
-              }
+              that.recursive_close();
               that.close(true);
             });
           }
@@ -1087,7 +1162,9 @@ class ContextMenu {
           field.elm.addEventListener("mouseover", () => {
             if(!field.contextMenuObj) {
               if(!field.contextMenu.options) { field.contextMenu.options = {}; }
-              if(!field.contextMenu.options.initPosition) { field.contextMenu.options.initPosition = "right"; }
+              if(!field.contextMenu.options.initPosition) {
+                field.contextMenu.options.initPosition = "right";
+              }
               field.contextMenuObj = new ContextMenu(event, field.contextMenu, callback, {parent: field, parent_menu: that, target: that.target});
               field.elm.addEventListener("mouseleave", (event) => {
                 event.stopPropagation();
@@ -1116,13 +1193,32 @@ class ContextMenu {
         callback(that.selected_items);
       }
     }
+    this.recursive_close = function() {
+      if(that.parent_menu) {
+        that.parent_menu.recursive_close()
+        that.parent_menu.close();
+      }
+    }
     this.event_close = function(event) {
       event.stopPropagation();
       if(!elementBelongsToDataType(event.target, "dgui_contextMenu")) {
-        that.close();
+        that.close(true);
       }
     }
     document.body.appendChild(this.elm);
+    if(this.options.initPosition == "left") {
+      this.elm.style.left = htmlTargetPosition.left - this.elm.offsetWidth + window.scrollX + "px";
+      this.elm.style.top = htmlTargetPosition.top + window.scrollY + "px";
+    }
+    let elm_htmlPosition = this.elm.getBoundingClientRect();
+    if(elm_htmlPosition.right > window.innerWidth) {
+      console.log("on est dans ce cas");
+      if(this.parent_menu) {
+        let parentElm_htmlPosition = this.parent.elm.getBoundingClientRect();
+        this.elm.style.left = parentElm_htmlPosition.left - elm_htmlPosition.width+"px";
+        this.parent_menu.options.initPosition = "left";
+      }
+    }
     setTimeout(() => {
       document.body.addEventListener("mousedown", this.event_close);
     }, 10);

@@ -1,3 +1,17 @@
+.dgui-form-pannel-layout {
+	display: flex;
+	flex: 1;
+	flex-direction: row;
+}
+
+.dgui-form-pannel-element {
+	padding: 10px 20px 10px 20px;
+}
+
+.dgui-form-pannel-element-message {
+	padding: 5px 20px 5px 20px;
+}
+
 .dgui-contextMenu {
     background-color: rgba(189, 192, 196, 0.9);
     position: absolute;
