@@ -1,3 +1,24 @@
+@font-face {
+	font-family: 'robotoRegular';
+		src: url('./fonts/Roboto/Roboto-Regular.ttf');
+}
+@font-face {
+	font-family: './robotoThin';
+		src: url('fonts/Roboto/Roboto-Thin.ttf');
+}
+@font-face {
+	font-family: './robotoLight';
+		src: url('fonts/Roboto/Roboto-Light.ttf');
+}
+@font-face {
+	font-family: './robotoMedium';
+		src: url('fonts/Roboto/Roboto-Medium.ttf');
+}
+@font-face {
+	font-family: 'robotoBold';
+		src: url('./fonts/Roboto-Bold.ttf');
+}
+
 .dgui-form-pannel-layout {
 	display: flex;
 	flex: 1;
@@ -30,6 +51,8 @@
     min-width: 200px;
     text-align: center;
     cursor: default;
+    font-family: robotoRegular;
+    color: #262626;
 }
 .dgui-contextMenu-item:hover {
     background-color: rgba(124, 110, 127, 0.4);

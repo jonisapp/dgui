@@ -164,7 +164,7 @@ class Button {
 
 /* --------------------------------- Interfaces Field --------------------------------------------------*/
 
-interface radioButton {
+interface field_radioButton {
   // user
   label: string;
   value: string;
@@ -173,19 +173,26 @@ interface radioButton {
   label_elm: HTMLLabelElement;
 }
 
+interface field_condition {
+  key: string;
+  value: string | number | Array<string> | Array<number>;
+}
+
 /* --------------------------------- CLASS Field -------------------------------------------------------*/
 
 class Field {
 
   /*                                              - Définition -                                        */
   // user
-  type: "message" | "button" | "text" | "choice" | "switch";
+  type: "message" | "button" | "text" | "quantity" | "choice" | "switch" | "select";
   key: string;
   name: string;
   label: string;
   value: string | boolean | number;
   size: number;
+  list: Array<string> | Array<Object>;
   action: any;
+  condition: boolean | field_condition;
   BSClass: string;
   group: string;
   // constroller
@@ -197,7 +204,7 @@ class Field {
   switched: boolean;
   // user & controller
   initValue: string | boolean | number;
-  radioButtons: Array<radioButton>;
+  radioButtons: Array<field_radioButton>;
 
   /*                                              - Constructor -                                       */
   constructor(field, parent?: FormPannel) {
@@ -215,6 +222,7 @@ class Field {
     if(field.group) {
       field.type = "switch";
     }
+    /*                                            - init according to type -                            */
     switch(field.type) {
       case "switch":
       this.input_elm = document.createElement("div");
@@ -248,57 +256,78 @@ class Field {
       });
       break;
       case "message":
-      this.input_elm = document.createElement("div");
-      setDefaultCursor(this.input_elm);
-      this.input_elm.setAttribute("style", "margin-top: 10px");
-      this.input_elm.style.textAlign = "left";
-      this.input_elm.innerHTML = field.message; break;
+        this.input_elm = document.createElement("div");
+        setDefaultCursor(this.input_elm);
+        this.input_elm.setAttribute("style", "margin-top: 10px");
+        this.input_elm.style.textAlign = "left";
+        this.input_elm.innerHTML = field.message; break;
       case "button":
-      this.button_elm = document.createElement("button");
-      this.button_elm.setAttribute("class", this.BSClass);
-      this.button_elm.textContent = this.label;
-      this.button_elm.addEventListener("click", that.action);
-      case "text": case "password":
-      if(field.label) {
-        this.label_elm = document.createElement("label");
-        this.label_elm.textContent = field.label;
-        this.label_elm.setAttribute("style", "text-align: left");
-      }
-      this.input_elm = document.createElement("input");
-      this.input_elm.setAttribute("type", field.type);
-      this.input_elm.setAttribute("class", "form form-control");
-      this.input_elm.setAttribute("autocorrect", "off");
-      if(field.placeholder) {
-         this.input_elm.setAttribute("placeholder", field.placeholder);
-      }
-      if(field.align) {
-        this.input_elm.style.textAlign = field.align;
-      }
-      if(field.max) {
-        this.input_elm.setAttribute("maxlength", field.max);
-      }
-      if(typeof this.initValue !== "undefined") {
-        this.input_elm.value = this.initValue;
-      }
-      else {
-        this.initValue = "";
-      } break;
+        this.button_elm = document.createElement("button");
+        this.button_elm.setAttribute("class", this.BSClass);
+        this.button_elm.textContent = this.label;
+        this.button_elm.addEventListener("click", that.action);
+      case "text": case "password": case "quantity":
+        if(field.label) {
+          this.label_elm = document.createElement("label");
+          this.label_elm.textContent = field.label;
+          this.label_elm.setAttribute("style", "text-align: left");
+        }
+        this.input_elm = document.createElement("input");
+        this.input_elm.setAttribute("type", field.type);
+        this.input_elm.setAttribute("class", "form form-control");
+        this.input_elm.setAttribute("autocorrect", "off");
+        if(field.placeholder) {
+          this.input_elm.setAttribute("placeholder", field.placeholder);
+        }
+        if(field.align) {
+          this.input_elm.style.textAlign = field.align;
+        }
+        if(field.max) {
+          this.input_elm.setAttribute("maxlength", field.max);
+        }
+        if(typeof this.initValue !== "undefined") {
+          this.input_elm.value = this.initValue;
+        }
+        else {
+          this.initValue = "";
+        } break;
+      case "select":
+        if(this.list) {
+          this.input_elm = document.createElement("select");
+          this.input_elm.setAttribute("class", "form form-control");
+          this.list.forEach((list_item, i) => {
+            let option = document.createElement("option");
+            option.setAttribute("value", i.toString());
+            option.textContent = list_item;
+            this.input_elm.appendChild(option);
+          });
+          this.input_elm.addEventListener("input", (e) => {
+            that.value = e.currentTarget.value;
+          });
+        }
+        break;
       case "choice":
-      if(typeof this.radioButtons !== "undefined") {
-        this.radioButtons.map(function(radioButton, index) {
-          radioButton.input_elm = document.createElement("input");
-          let input_elm_id = "radio_"+field.name+"_"+index;
-          radioButton.input_elm.type = "radio";
-          radioButton.input_elm.id = input_elm_id;
-          radioButton.input_elm.name = field.name;
-          radioButton.input_elm.value = radioButton.value;
-          radioButton.label_elm = document.createElement("label");
-          radioButton.label_elm.setAttribute("for", input_elm_id);
-          radioButton.label_elm.style.marginLeft = "10px";
-          radioButton.label_elm.textContent = radioButton.label;
-        });
-      } break;
+        if(typeof this.radioButtons !== "undefined") {
+          this.radioButtons.map(function(radioButton, index) {
+            radioButton.input_elm = document.createElement("input");
+            let input_elm_id = "radio_"+field.name+"_"+index;
+            radioButton.input_elm.type = "radio";
+            radioButton.input_elm.id = input_elm_id;
+            radioButton.input_elm.name = field.name;
+            radioButton.input_elm.value = radioButton.value;
+            radioButton.label_elm = document.createElement("label");
+            radioButton.label_elm.setAttribute("for", input_elm_id);
+            radioButton.label_elm.style.marginLeft = "10px";
+            radioButton.label_elm.textContent = radioButton.label;
+          });
+        } break;
     }
+    if(field.type == "quantity") {
+      this.input_elm.setAttribute("type", "number");
+      this.input_elm.setAttribute("step", "1");
+      this.input_elm.setAttribute("min", "0");
+    }
+    /*                                            - init display -                                      */
     this.elm = document.createElement("div");
     if(field.type != "message") {
       this.elm.setAttribute("class", "dgui-form-pannel-element");
@@ -338,7 +367,35 @@ class Field {
     else {
       this.elm.appendChild(this.input_elm);
     }
+    /*                                            - display according to condition -                    */
+    if(typeof this.condition !== "undefined") {
+      if(typeof this.condition === "boolean") {
+        if(this.condition === false) {
+          this.elm.style.display = "none";
+        }
+      }
+      else if((this.condition.key && this.condition.value) && this.parent) {
+        this.parent.fields.forEach((field) => {
+          if(field.key == this.condition.key) {
+            that.check_condition(field);
+            field.input_elm.addEventListener("input", (e) => {
+              that.check_condition(e.currentTarget);
+            });
+          }
+        });
+      }
+    }
   }
+
+  check_condition(targetField) {
+    if(Array.isArray(this.condition.value)) {
+      this.elm.style.display = (this.condition.value.includes(targetField.value)) ? "block" : "none";
+    }
+    else {
+      this.elm.style.display = (this.condition.value == targetField.value) ? "block" : "none";
+    }
+  }
+     
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -836,13 +893,16 @@ class FormPannel {
 
   submitField(field, values) {
     let initValue = (typeof field.initValue !== "undefined") ? field.initValue : "";
-    if(field.type == "text" || field.type == "password") {
+    if(field.type == "text" || field.type == "password" || field.type == "quantity" || field.type == "select") {
       // On ne soumet que les champs dont la valeur a été modifiée
       if(field.input_elm.value != initValue) {
         // Si le champs possède un attribut key il sera renvoyé sous forme d'objet (key: value)
         if(typeof field.key !== "undefined") {
           let objTextField = {};
           objTextField[field.key] = field.input_elm.value;
+          if(field.type == "select" || field.type == "quantity") {
+            objTextField[field.key] = parseInt(field.input_elm.value);
+          }
           values.push(objTextField);
         }
         else {
@@ -1122,7 +1182,7 @@ class ContextMenu {
                 field.value = false;
                 let itemToRemoveIndex = that.selected_items.indexOf(that.fields[index].key);
                 that.selected_items.splice(itemToRemoveIndex, 1);
-                that.changeColor(event.target, "rgba(124, 110, 127, 0)", "black");
+                that.changeColor(event.target, "rgba(124, 110, 127, 0)", "#262626");
               }
               // action
               if(field.action) {
@@ -1140,7 +1200,7 @@ class ContextMenu {
             });
             field.elm.addEventListener("mouseout", (event) => {
               if(!field.value) {
-                that.changeColor(event.target, "rgba(112 ,112 ,112, 0)", "black");
+                that.changeColor(event.target, "rgba(112 ,112 ,112, 0)", "#262626");
               }
             });
           }
