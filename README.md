@@ -23,4 +23,4 @@ dgui.confirm("Would you like to use that stuff ?");
 dgui.prompt("May I ask you to indicate your name ?");
 
 ```
-![alt "test"](examples/commonDialogsBoxes)
+![alt "test"](examples/commonDialogsBoxes.png)
