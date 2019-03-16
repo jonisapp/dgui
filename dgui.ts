@@ -776,8 +776,8 @@ class FormPannel {
 
     if(typeof this.footer === "undefined") {
       this.footer = [
-        {action: "submit", value: "Valider", BSClass: "btn-success"},
-        {action: "abort", value: "Annuler", BSClass: "btn-warning"}
+        {action: "submit", value: "Submit", BSClass: "btn-success"},
+        {action: "abort", value: "Cancel", BSClass: "btn-warning"}
       ];
     }
     this.footer_elm = document.createElement("div");
