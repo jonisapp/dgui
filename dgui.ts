@@ -1310,7 +1310,7 @@ export function alert(message: string | Error, title?: string, callback?: Functi
   }, callback);
 }
 
-export function confirm(message: string, title="Confirmation", callback: Function) {
+export function confirm(message: string, title="Confirm", callback: Function) {
   if(typeof title == "function") {
     callback = title;
     title = "Confirmation";
@@ -1319,13 +1319,13 @@ export function confirm(message: string, title="Confirmation", callback: Functio
     title: title,
     fields: [{type: "message", message: message}],
     footer: [
-      {action: "confirm", value: "Confirmer", BSClass: "btn-danger"},
-      {action: "abort", value: "Annuler", BSClass: "btn-warning"}
+      {action: "confirm", value: "Confirm", BSClass: "btn-danger"},
+      {action: "abort", value: "Abort", BSClass: "btn-warning"}
     ]
   }, callback);
 }
 
-export function prompt(message, callback, title="Saisie", maxWidth=500) {
+export function prompt(message, callback, title="Entry", maxWidth=500) {
   new modal({
     title: title,
     fields: [{type: "message", message: message}, {type: "text"}],
