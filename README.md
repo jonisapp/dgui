@@ -15,3 +15,10 @@
 * form elements
 * MDI elements
 * modals
+## Code examples
+### Common dialog boxes
+```javascript
+dgui.alert("Hello world, from dgui !");
+
+```
+![alt "test"](examples/alert.png)

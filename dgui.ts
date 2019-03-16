@@ -326,6 +326,9 @@ class Field {
       this.input_elm.setAttribute("type", "number");
       this.input_elm.setAttribute("step", "1");
       this.input_elm.setAttribute("min", "0");
+      if(!this.initValue) {
+        this.input_elm.value = "1";
+      }
     }
     /*                                            - init display -                                      */
     this.elm = document.createElement("div");
@@ -684,7 +687,7 @@ class FormPannel {
         if(Array.isArray(field_s)) {
           var formPannelLayout = document.createElement("div");
           formPannelLayout.setAttribute("class", "dgui-form-pannel-layout");
-          var reduce_padding = (field_s.length > 2) ? true : false;
+          var reduce_padding = (field_s.length > 1) ? true : false;
           if(reduce_padding) {
             formPannelLayout.style.paddingLeft = 15+"px";
             formPannelLayout.style.paddingRight = 15+"px";
