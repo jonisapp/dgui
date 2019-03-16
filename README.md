@@ -1,4 +1,4 @@
-# dGUI - Interface elements generator including data and events handling
+# dGUI - Interface elements generator library including data and events handling
 
 ## Use cases
 * Meteor applications (dGUI was developped in this context)
@@ -16,6 +16,8 @@
 * MDI elements
 * modals
 * contextual menus
+* (soon) selection tool
+* (soon) theming
 ## Code examples
 ### Common dialog boxes
 ```javascript
@@ -45,8 +47,8 @@ dgui.prompt("May I ask you to indicate your name ?", "Entry", (ans) => {
           {key: "hobby", label: "Hobby"},
           /* By embedding fields in arrays, you can layer them horizontally*/
           [{type: "quantity", key: "quantity", size: 1},
-          /* label field is optional */
-          /* size attribut sets field width proportionnaly */
+          /* label attribut is optional */
+          /* size attribut sets field's width proportionnaly (ratio 2/3) */
           {key: "pet", size: 2}]
         ]},
         {key: "kitchen", label: "Kitchen"},
