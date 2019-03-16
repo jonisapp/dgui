@@ -21,10 +21,10 @@
 ```javascript
 dgui.alert("Hello world, from dgui !");
 dgui.confirm("Would you like to use that stuff ?", "Confirm", (ans) => {
-	if(ans.value) { dgui.alert("Thank you !"); }
+  if(ans.value) { dgui.alert("Thank you !"); }
 });
 dgui.prompt("May I ask you to indicate your name ?", "Entry", (ans) => {
-	dgui.alert("Hello " + ans.value);
+  dgui.alert("Hello " + ans.value);
 });
 
 ```
