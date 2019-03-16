@@ -1325,7 +1325,7 @@ export function confirm(message: string, title="Confirm", callback: Function) {
   }, callback);
 }
 
-export function prompt(message, callback, title="Entry", maxWidth=500) {
+export function prompt(message, title="Entry", callback, maxWidth=500) {
   new modal({
     title: title,
     fields: [{type: "message", message: message}, {type: "text"}],

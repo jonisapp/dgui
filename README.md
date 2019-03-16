@@ -15,12 +15,17 @@
 * form elements
 * MDI elements
 * modals
+* contextual menus
 ## Code examples
 ### Common dialog boxes
 ```javascript
 dgui.alert("Hello world, from dgui !");
-dgui.confirm("Would you like to use that stuff ?");
-dgui.prompt("May I ask you to indicate your name ?");
+dgui.confirm("Would you like to use that stuff ?", "Confirm", (ans) => {
+	if(ans.value) { dgui.alert("Thank you !"); }
+});
+dgui.prompt("May I ask you to indicate your name ?", "Entry", (ans) => {
+	dgui.alert("Hello " + ans.value);
+});
 
 ```
 ![alt "test"](examples/commonDialogsBoxes.png)
