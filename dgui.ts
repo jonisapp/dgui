@@ -136,7 +136,7 @@ class Button {
     this.parent = parent;
     this.elm = document.createElement("button");
     this.elm.setAttribute("class", "btn "+ button_BScolor_class);
-    this.elm.setAttribute("style", "text-align: center; margin-left: 5px; margin-right: 5px");
+    this.elm.setAttribute("style", "text-align: center; margin-left: 5px; margin-right: 5px; min-width: 70px");
     this.elm.textContent = label;
   }
 
@@ -1306,7 +1306,7 @@ export function alert(message: string | Error, title?: string, callback?: Functi
   new modal({
     title: title || "Information",
     fields: [{type: "message", message: message}],
-    footer: [{action: "quit", value: "D'accord", BSClass: "btn-success"}]
+    footer: [{action: "quit", value: "Ok", BSClass: "btn-success"}]
   }, callback);
 }
 
@@ -1320,7 +1320,7 @@ export function confirm(message: string, title="Confirm", callback: Function) {
     fields: [{type: "message", message: message}],
     footer: [
       {action: "confirm", value: "Confirm", BSClass: "btn-danger"},
-      {action: "abort", value: "Abort", BSClass: "btn-warning"}
+      {action: "abort", value: "Cancel", BSClass: "btn-warning"}
     ]
   }, callback);
 }
@@ -1330,8 +1330,8 @@ export function prompt(message, title="Entry", callback, maxWidth=500) {
     title: title,
     fields: [{type: "message", message: message}, {type: "text"}],
     footer: [
-      {action: "submit", value: "Confirmer", BSClass: "btn-danger"},
-      {action: "quit", value: "Annuler", BSClass: "btn-warning"}
+      {action: "submit", value: "Submit", BSClass: "btn-danger"},
+      {action: "quit", value: "Cancel", BSClass: "btn-warning"}
     ],
     display: {maxWidth: maxWidth}
   }, callback);
