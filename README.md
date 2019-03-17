@@ -32,7 +32,7 @@ dgui.prompt("May I ask you to indicate your name ?", "Entry", (ans) => {
 });
 
 ```
-![alt "test"](examples/commonDialogsBoxes.png)
+![alt "common dialog boxes"](examples/commonDialogsBoxes.png)
 
 ### Modal and MDI
 ```javascript
@@ -67,4 +67,27 @@ dgui.prompt("May I ask you to indicate your name ?", "Entry", (ans) => {
     }
   });
 ```
-![alt "test"](examples/modalForm.png)
+![alt "modal form"](examples/modalForm.png)
+```javascript
+    dgui.modalForm({
+      title: "My modal form !",
+      MDI: {
+        sections: [
+          {key: "profile", label: "Profile", fields: [
+            {key: "firstname", label: "Firstname"},
+            {key: "name", label: "Name"},
+            {key: "hobby", label: "Hobby"},
+            [{type: "quantity", key: "quantity", size: 1},
+            {key: "pet", size: 2}]
+          ]},
+          {key: "kitchen", label: "Kitchen"},
+          {key: "setup", label: "Setup"}
+        ],
+        options: {containerWidth: 450, containerHeight: 400}
+        //You can set just one color and dGUI will do the rest !
+      }, options: {color: "#f7f5ef"}
+    }, (form) => {
+      form.end();
+    });
+```
+![alt "colored modals"](examples/coloredModals.png)

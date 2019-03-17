@@ -64,7 +64,7 @@ export function setDefaultCursor(elm: any) {
 /* --------------------------------- CLASS Translucent -------------------------------------------------*/
 
 class Translucent {
-  elm: HTMLElement;
+  elm: HTMLDivElement;
   opacity: number;
   tmp_body_backgroud: string;
 
@@ -407,10 +407,11 @@ class Field {
 /* --------------------------------- Interfaces MDI ----------------------------------------------------*/
 
 interface MDI_options {
-  containerWidth: number;
-  containerHeight: number;
-  menuItemWidth: number;
-  menuLayout: string;
+  containerWidth?: number;
+  containerHeight?: number;
+  menuItemWidth?: number;
+  menuLayout?: string;
+  shape?: "rounded" | "squared";
 }
 
 /* --------------------------------- CLASS MDI ---------------------------------------------------------*/
@@ -430,6 +431,9 @@ class MDI {
       this[attribut] = mdi[attribut];
     }
     this.parent = parent;
+    if(!this.options) { this.options = {}; }
+    if(!this.options.menuLayout) { this.options.menuLayout = "horizontal";  }
+    if(!this.options.shape) { this.options.shape = this.parent.options.shape; }
     // génération du menu et du container
     if(typeof this.sections !== "undefined") {
       this.elm = document.createElement("div");
@@ -437,13 +441,13 @@ class MDI {
       this.elm.setAttribute("style", "margin-left: 5px; margin-right: 5px; margin-top: 0px");
       this.menu_elm = document.createElement("div");
       this.menu_elm.id = parent.id + "_sections_tabsElm";
-      if(typeof this.options.menuLayout !== "undefined") {
+      if(this.options.menuLayout) {
         if(this.options.menuLayout == "horizontal") {
           this.elm.setAttribute("class", "form-pannel-vertical-layout")
           this.menu_elm.setAttribute("class", "form-pannel-layout");
         }
         else if(this.options.menuLayout == "vertical") {
-          this.elm.setAttribute("class", "form-pannel-layout")
+          this.elm.setAttribute("class", "form-pannel-layout");
           this.menu_elm.setAttribute("class", "form-pannel-vertical-layout");
         }
       }
@@ -458,9 +462,14 @@ class MDI {
               this.container_elm.style.width = this.options[attribut]+"px"; break;
             case "containerHeight":
               this.container_elm.style.height = this.options[attribut]+"px"; break;
+            case "shape":
+              if(this.options.shape == "squared") {
+                this.container_elm.style.borderRadius = "0px";
+              }  break;
           }
         }
       }
+      this.container_elm.style.backgroundColor = this.parent.colorSet.secColor;
       // génération des sections
       this.lastSelectedElmIndex=0;
       for(var i=0; i < this.sections.length; ++i) {
@@ -477,6 +486,7 @@ class MDI {
           else {
             this.sections[i].tabElm.setAttribute("class", "dgui-left-tab");
           }
+          if(this.options.shape == "squared") {this.sections[i].tabElm.style.borderRadius = "0px";}
           if(this.options.menuItemWidth) {
             this.setTabStyle(this.sections[i].tabElm, {width: this.options.menuItemWidth+"px"});
           }
@@ -492,10 +502,10 @@ class MDI {
                 that.initTab(e.currentTarget);
                 let lastSelectedTab = document.getElementById(lastSelectedElm_id );
                 if(that.options.menuLayout == "horizontal") {
-                  that.setTabStyle(lastSelectedTab, {backgroundColor: "#BABABA", height: "40px", marginTop: "7px", borderBottomWidth: "1px", fontWeight: "normal", borderColor: "#8A8A8A"});
+                  that.setTabStyle(lastSelectedTab, {backgroundColor: that.parent.colorSet.thrColor, height: "40px", marginTop: "7px", borderBottomWidth: "1px", fontWeight: "normal", borderColor: "#8A8A8A"});
                 }
                 else {
-                  that.setTabStyle(lastSelectedTab, {backgroundColor: "#BABABA", height: "40px", marginLeft: "7px", borderRightWidth: "1px", fontWeight: "normal", borderColor: "#8A8A8A"});
+                  that.setTabStyle(lastSelectedTab, {backgroundColor: that.parent.colorSet.thrColor , height: "40px", marginLeft: "7px", borderRightWidth: "1px", fontWeight: "normal", borderColor: "#8A8A8A"});
                 }
                 if(that.options.menuItemWidth) {
                   that.setTabStyle(lastSelectedTab, {width: that.options.menuItemWidth+"px"});
@@ -543,12 +553,12 @@ class MDI {
     }
   }
 
-  initTab(tab) {
+  initTab(tab) { //th: BABABA sec: D3D3D3
     if(this.options.menuLayout == "horizontal") {
-      this.setTabStyle(tab, {backgroundColor: "#D3D3D3", height: "44px", marginTop: "3px", borderBottomWidth: "0px", fontWeight: "normal", borderColor: "#AAAAAA"});
+      this.setTabStyle(tab, {backgroundColor: this.parent.colorSet.secColor , height: "44px", marginTop: "3px", borderBottomWidth: "0px", fontWeight: "normal", borderColor: "#AAAAAA"});
     }
     else if(this.options.menuLayout == "vertical") {
-      this.setTabStyle(tab, {backgroundColor: "#D3D3D3", height: "44px", marginLeft: "3px", borderRightWidth: "0px", fontWeight: "normal", borderColor: "#AAAAAA"});
+      this.setTabStyle(tab, {backgroundColor: this.parent.colorSet.secColor, height: "44px", marginLeft: "3px", borderRightWidth: "0px", fontWeight: "normal", borderColor: "#AAAAAA"});
     }
     if(this.options.menuItemWidth) {
       this.setTabStyle(tab, {width: this.options.menuItemWidth+4+"px"});
@@ -563,13 +573,55 @@ class MDI {
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////// Form dGUI ///////////////////////////////////////////////////////////
 
+class ColorSet {
+  prmColor: string;
+  secColor: string;
+  thrColor: string;
+  borderColor: string;
+  arr_baseIntensity: Array<string>;
+
+  constructor(color1: string, color2?: string, color3?: string) {
+    this.arr_baseIntensity = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "a", "b", "c", "d", "e", "f"];
+    this.prmColor = color1;
+    this.secColor = (color2) ? color2 : this.calculateColor(color1, 20);
+    this.thrColor = (color3) ? color3 : this.calculateColor(this.secColor, 40);
+    console.log(this.secColor);
+    console.log(this.thrColor);
+  }
+
+  calculateColor(hexa_color: string, diff: number) {
+    let r_1 = hexa_color.substr(1, 1);
+    let r_2 = hexa_color.substr(2, 1);
+    let g_1 = hexa_color.substr(3, 1);
+    let g_2 = hexa_color.substr(4, 1);
+    let b_1 = hexa_color.substr(5, 1);
+    let b_2 = hexa_color.substr(6, 1);
+    return "#" + this.addIntensity(r_1, r_2, diff) + this.addIntensity(g_1, g_2, diff) + this.addIntensity(b_1, b_2, diff); 
+  }
+
+  addIntensity(comp1: string, comp2: string, diff: number) {
+    let res_comp1 = this.arr_baseIntensity.indexOf(comp1) + 1;
+    let res_comp2 = this.arr_baseIntensity.indexOf(comp2) - diff + 1;
+    if(res_comp2 < 0) {
+      let remainning = (res_comp2 * -1 > 16) ? (res_comp2 * -1) % 16 : res_comp2 * -1;
+      let unities = (res_comp2 * -1 >= this.arr_baseIntensity.length) ? Math.round((res_comp2 * -1) / this.arr_baseIntensity.length) : 1;
+      console.log(unities);
+      res_comp2 = this.arr_baseIntensity.length - remainning;
+      res_comp1 -= unities;
+    }
+    return this.arr_baseIntensity[res_comp1-1] + this.arr_baseIntensity[res_comp2-1];
+  }
+}
+
 /* --------------------------------- Interfaces FormPannel ---------------------------------------------*/
 
 interface formPannel_options {
-  maxWidth: number;
-  maxHeight: number;
-  containerWidth: number;
-  allFieldsMandatory: boolean;
+  color?: string;
+  maxWidth?: number;
+  maxHeight?: number;
+  containerWidth?: number;
+  shape?: "rounded" | "squared";
+  allFieldsMandatory?: boolean; //à implémenter
 }
 
 interface button {
@@ -599,6 +651,7 @@ class FormPannel {
   MDI: MDI;
   footer_elm: HTMLDivElement;
   // controller
+  colorSet: ColorSet;
   groups: Array<formPannel_fieldGroup>;
 
   constructor(properties, parent) {
@@ -608,8 +661,17 @@ class FormPannel {
     }
     this.parent = parent;
     this.groups = [];
+
+    if(!this.options) {
+      this.options = {};
+    }
+    if(!this.options.shape) {this.options.shape = "rounded";}
+    if(!this.options.color) {this.options.color = "#D3D3D3";}
+    this.colorSet = new ColorSet(this.options.color);
+
     this.elm = document.createElement("div");
     this.elm.setAttribute("style", "background-color: #B9BAB8; padding: 5px; padding-top: 0px; border-radius: 7px; margin-bottom: 30px; border: 1px solid #B2B2B2;");
+    this.elm.style.backgroundColor = this.colorSet.thrColor;
     this.elm.addEventListener("keydown", function(e) {
       if(e.keyCode == 13) {
         that.submit();
@@ -629,7 +691,6 @@ class FormPannel {
     this.elm.appendChild(scrollElm);
 
     this.initDisplay();
-
     // initialisation
     let formPannelHeader = document.createElement("div");
     formPannelHeader.setAttribute("style", "padding: 7px");
@@ -640,17 +701,19 @@ class FormPannel {
     formPannelHeader.appendChild(formPannelTitle);
     var formPannelBody = document.createElement("div");
     this.errorMessage_elm = document.createElement("div");
-    this.errorMessage_elm.setAttribute("style", "display: none; background-color: #e26c6c; color: white; border-radius: 3px; font-weight: normal; margin: 5px; padding: 5px;");
-    if(this.options) {
-      if(this.options.containerWidth) {
-        this.errorMessage_elm.style.width = this.options.containerWidth+150+"px";
-      }
+    this.errorMessage_elm.setAttribute("style", "display: none; background-color: #e26c6c; color: white; border-radius: 3px; font-weight: normal; margin: 5px;padding: 5px;");
+    if(this.options.containerWidth) {
+      this.errorMessage_elm.style.width = this.options.containerWidth+150+"px";
     }
     formPannelBody.appendChild(this.errorMessage_elm);
     if(typeof this.MDI !== "undefined") {
       formPannelBody.appendChild(this.MDI.elm);
     }
-    formPannelBody.setAttribute("style", "padding: 10px; background-color: #DDDDDD; border-radius: 7px; text-align: center;");
+    formPannelBody.setAttribute("style", "padding: 10px; border-radius: 7px; text-align: center;");
+    formPannelBody.style.backgroundColor = this.colorSet.prmColor;
+    if(this.options.shape == "squared") {
+      formPannelBody.style.borderRadius = "0px";
+    }
     if(typeof this.fields !== "undefined") {
       var that = this;
       // this.fields.map(function(field, index) {
