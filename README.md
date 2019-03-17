@@ -92,3 +92,49 @@ dgui.modalForm({
 });
 ```
 ![alt "modal form"](examples/modalForm.png)
+
+### Contextmenus
+```javascript
+html_element.addEventListener("contextmenu", (e) => {
+  e.preventDefault();   /* disable the default contextmenu */
+  dgui.contextMenu(e, {
+    fields: [
+      {key: "important", label: "important !", type: "switch", switchLock: true, action: (target_elm, bool) => {
+        /* Instructions */
+      }},
+      {key: "task", label: "Task", contextMenu: {
+        fields: [         
+          /* You can conditionally display menu items */
+          {label: "New task", condition: false, action: (target_elm) => { t.task(target_elm, "add", note.title) }},
+          {label: "status", contextMenu: {
+            fields: [
+              {key: "initial", label: "initial", group: "task", action: (key) => { /* Instructions */ }},
+              {key: "ongoing", label: "ongoing", group: "task", action: (key) => { /* Instructions */ }},
+              {key: "achieved", label: "achieved", group: "task", action: (key) => { /* Instructions */ }}
+            ]
+          }},
+          {label: "modify", action: (target_elm) => { t.task(target_elm, "edit", null, note.task) }},
+          {label: "remove", action: (target_elm) => { 
+            dgui.confirm("Are you sure you want to remove this task ?", "Remove task", (res) => {
+              if(res) { Some_Function_To_Delete(target_elm.dataset.id); }
+            });
+           }}
+        ]}
+      },
+      {label: "copy", contextMenu: {
+        fields: [
+          {label: "content", action: (target_elm) => {
+            let target_id =  target_elm.dataset.id;
+            let target = document.getElementById(target_id);
+            /* dGUI provides some usefull functions */
+            dgui.copyToClipboard(target.innerHTML);
+          }}
+        ]}
+      }
+    ], options: {initPosition: "mouse"}
+  }, (feedback) => {
+    /* You can also get the data from here, especially if your menu contains switches */
+  });
+});
+```
+![alt "contextmenus"](examples/contextMenu.png)
