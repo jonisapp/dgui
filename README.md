@@ -36,58 +36,58 @@ dgui.prompt("May I ask you to indicate your name ?", "Entry", (ans) => {
 
 ### Modal and MDI
 ```javascript
-  dgui.modalForm({
-    title: "My modal form !",
-    MDI: {
-      sections: [
-        {key: "profile", label: "Profile", fields: [
-          /* if not specified, default field type is "text" */
-          {key: "firstname", label: "Firstname"},
-          {key: "name", label: "Name"},
-          {key: "hobby", label: "Hobby"},
-          /* By embedding fields in arrays, you can layer them horizontally*/
-          [{type: "quantity", key: "quantity", size: 1},
-          /* label attribut is optional */
-          /* size attribut sets field's width proportionnaly (ratio 2/3) */
-          {key: "pet", size: 2}]
-        ]},
-        {key: "kitchen", label: "Kitchen"},
-        {key: "setup", label: "Setup"}
-      ],
-      options: {menuLayout: "horizontal", containerWidth: 450, containerHeight: 400}
-    }
-  }, (form) => {
-    let data = form.value;
-    /* You can access data using key attribut values */
-    console.log(data);
-    if(data.profile.firstname == "Donald") {
-      dgui.alert("Yuck !");
-      /* Close the modal */
-      form.end();
-    }
-  });
+dgui.modalForm({
+  title: "My modal form !",
+  MDI: {
+    sections: [
+      {key: "profile", label: "Profile", fields: [
+        /* if not specified, default field type is "text" */
+        {key: "firstname", label: "Firstname"},
+        {key: "name", label: "Name"},
+        {key: "hobby", label: "Hobby"},
+        /* By embedding fields in arrays, you can layer them horizontally*/
+        [{type: "quantity", key: "quantity", size: 1},
+        /* label attribut is optional */
+        /* size attribut sets field's width proportionnaly (ratio 2/3) */
+        {key: "pet", size: 2}]
+      ]},
+      {key: "kitchen", label: "Kitchen"},
+      {key: "setup", label: "Setup"}
+    ],
+    options: {menuLayout: "horizontal", containerWidth: 450, containerHeight: 400}
+  }
+}, (form) => {
+  let data = form.value;
+  /* You can access data using key attribut values */
+  console.log(data);
+  if(data.profile.firstname == "Donald") {
+    dgui.alert("Yuck !");
+    /* Close the modal */
+    form.end();
+  }
+});
 ```
 ![alt "modal form"](examples/modalForm.png)
 ```javascript
-    dgui.modalForm({
-      title: "My modal form !",
-      MDI: {
-        sections: [
-          {key: "profile", label: "Profile", fields: [
-            {key: "firstname", label: "Firstname"},
-            {key: "name", label: "Name"},
-            {key: "hobby", label: "Hobby"},
-            [{type: "quantity", key: "quantity", size: 1},
-            {key: "pet", size: 2}]
-          ]},
-          {key: "kitchen", label: "Kitchen"},
-          {key: "setup", label: "Setup"}
-        ],
-        options: {containerWidth: 450, containerHeight: 400}
-        //You can set just one color and dGUI will do the rest !
-      }, options: {color: "#f7f5ef"}
-    }, (form) => {
-      form.end();
-    });
+dgui.modalForm({
+  title: "My modal form !",
+  MDI: {
+    sections: [
+      {key: "profile", label: "Profile", fields: [
+        {key: "firstname", label: "Firstname"},
+        {key: "name", label: "Name"},
+        {key: "hobby", label: "Hobby"},
+        [{type: "quantity", key: "quantity", size: 1},
+        {key: "pet", size: 2}]
+      ]},
+      {key: "kitchen", label: "Kitchen"},
+      {key: "setup", label: "Setup"}
+    ],
+    options: {containerWidth: 450, containerHeight: 400}
+    //You can set just one color and dGUI will do the rest !
+  }, options: {color: "#f7f5ef"}
+}, (form) => {
+  form.end();
+});
 ```
 ![alt "colored modals"](examples/coloredModals.png)
