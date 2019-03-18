@@ -90,12 +90,12 @@ class ColorSet {
     console.log(this.prmColor);
     this.secColor = (color2) ? color2 : this.algo0(color1, 20);
     console.log(this.secColor);
-    this.secBrdColor = this.algo0(this.secColor, 20);
+    this.secBrdColor = this.algo0(this.secColor, 30);
     this.thrColor = (color3) ? color3 : this.algo0(this.secColor, 30);
     this.thrBrdColor = this.algo0(this.thrColor, 50);
   }
 
-  algo0(hexa_color: string, diff: number) {
+  algo1(hexa_color: string, diff: number) {
     let r_1 = hexa_color.substr(1, 1);
     let r_2 = hexa_color.substr(2, 1);
     let g_1 = hexa_color.substr(3, 1);
@@ -103,6 +103,20 @@ class ColorSet {
     let b_1 = hexa_color.substr(5, 1);
     let b_2 = hexa_color.substr(6, 1);
     return "#" + this.addIntensity(r_1, r_2, diff) + this.addIntensity(g_1, g_2, diff) + this.addIntensity(b_1, b_2, diff); 
+  }
+
+  algo0(hexa_color: string, diff: number) {
+    return this.rgbToHexa(this.multiplyIntensity(hexa_color, diff));
+  }
+
+  multiplyIntensity(hexa_color: string, diff: number) {
+    let rgb = this.hexaToRgb(hexa_color);
+    console.log(rgb.r);
+    rgb.r = Math.round(rgb.r - (rgb.r * (diff / 200)));
+    console.log(rgb.r);
+    rgb.g = Math.round(rgb.g - (rgb.g * (diff / 200)));
+    rgb.b = Math.round(rgb.b - (rgb.b * (diff / 200)));
+    return rgb;
   }
 
   addIntensity(comp1: string, comp2: string, diff: number) {
@@ -117,16 +131,8 @@ class ColorSet {
     return this.arr_baseIntensity[int_comp1 - unities] + this.arr_baseIntensity[remainning - 1];
   }
 
-  algo1(hexa_color: string, diff: number) {
-    let hsl = this.rgbToHsl(this.hexaToRgb(hexa_color));
-    hsl.l -= (diff/300);
-    console.log(this.rgbToHexa(this.hslToRgb(hsl)));
-    return this.rgbToHexa(this.hslToRgb(hsl));
-  }
-
   hexaToRgb(hexa_color: string) {
     var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hexa_color);
-    console.log(result);
     return result ? {
         r: parseInt(result[1], 16),
         g: parseInt(result[2], 16),
@@ -136,48 +142,6 @@ class ColorSet {
 
   rgbToHexa(rgb: colorSet_rgb_value) {
     return "#" + ((1 << 24) + (rgb.r << 16) + (rgb.g << 8) + rgb.b).toString(16).slice(1);
-  }
-
-  rgbToHsl(rgb: colorSet_rgb_value) {
-    var r = rgb.r / 255; var g = rgb.g / 255; var b = rgb.b / 255;
-    var max = Math.max(r, g, b), min = Math.min(r, g, b);
-    var h, s, l = (max + min) / 2;
-    if (max == min) {
-      h = s = 0; // achromatique
-    } else {
-      var d = max - min;
-      s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-      switch (max) {
-        case r: h = (g - b) / d + (g < b ? 6 : 0); break;
-        case g: h = (b - r) / d + 2; break;
-        case b: h = (r - g) / d + 4; break;
-      }
-      h /= 6;
-    }
-    return {h: h, s: s, l: l};
-  }
-
-  hslToRgb(hsl: colorSet_hsl_value) {
-    var h = hsl.h; var s = hsl.s; var l = hsl.l;
-    var r, g, b;
-    if (s == 0) {
-      r = g = b = l;
-    } else {
-      function hue2rgb(p, q, t) {
-        if (t < 0) t += 1;
-        if (t > 1) t -= 1;
-        if (t < 1/6) return p + (q - p) * 6 * t;
-        if (t < 1/2) return q;
-        if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
-        return p;
-      }
-      var q = l < 0.5 ? l * (1 + s) : l + s - l * s;
-      var p = 2 * l - q;
-      r = hue2rgb(p, q, h + 1/3);
-      g = hue2rgb(p, q, h);
-      b = hue2rgb(p, q, h - 1/3);
-    }
-    return {r: Math.round(r * 255), g: Math.round(g * 255), b: Math.round(b * 255)};
   }
 }
 
