@@ -61,6 +61,126 @@ export function setDefaultCursor(elm: any) {
   elm.style.cursor = "default";
 }
 
+/* --------------------------------- CLASS Colorset ----------------------------------------------------*/
+
+interface colorSet_rgb_value {
+  r: number;
+  g: number;
+  b: number;
+}
+
+interface colorSet_hsl_value {
+  h: number;
+  s: number;
+  l: number;
+}
+
+class ColorSet {
+  prmColor: string;
+  secColor: string;
+  secBrdColor: string;
+  thrColor: string;
+  thrBrdColor: string;
+  borderColor: string;
+  arr_baseIntensity: Array<string>;
+
+  constructor(color1: string, color2?: string, color3?: string) {
+    this.arr_baseIntensity = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "a", "b", "c", "d", "e", "f"];
+    this.prmColor = color1;
+    console.log(this.prmColor);
+    this.secColor = (color2) ? color2 : this.algo0(color1, 20);
+    console.log(this.secColor);
+    this.secBrdColor = this.algo0(this.secColor, 20);
+    this.thrColor = (color3) ? color3 : this.algo0(this.secColor, 30);
+    this.thrBrdColor = this.algo0(this.thrColor, 50);
+  }
+
+  algo0(hexa_color: string, diff: number) {
+    let r_1 = hexa_color.substr(1, 1);
+    let r_2 = hexa_color.substr(2, 1);
+    let g_1 = hexa_color.substr(3, 1);
+    let g_2 = hexa_color.substr(4, 1);
+    let b_1 = hexa_color.substr(5, 1);
+    let b_2 = hexa_color.substr(6, 1);
+    return "#" + this.addIntensity(r_1, r_2, diff) + this.addIntensity(g_1, g_2, diff) + this.addIntensity(b_1, b_2, diff); 
+  }
+
+  addIntensity(comp1: string, comp2: string, diff: number) {
+    let int_comp1 = this.arr_baseIntensity.indexOf(comp1) + 1;
+    let int_comp2 = this.arr_baseIntensity.indexOf(comp2) + 1;
+    let unities = Math.round((diff + int_comp2) / 16);
+    let remainning = int_comp2 - (diff % 16);
+    if(remainning <= 0) {
+      remainning += 16;
+      ++unities;
+    }
+    return this.arr_baseIntensity[int_comp1 - unities] + this.arr_baseIntensity[remainning - 1];
+  }
+
+  algo1(hexa_color: string, diff: number) {
+    let hsl = this.rgbToHsl(this.hexaToRgb(hexa_color));
+    hsl.l -= (diff/300);
+    console.log(this.rgbToHexa(this.hslToRgb(hsl)));
+    return this.rgbToHexa(this.hslToRgb(hsl));
+  }
+
+  hexaToRgb(hexa_color: string) {
+    var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hexa_color);
+    console.log(result);
+    return result ? {
+        r: parseInt(result[1], 16),
+        g: parseInt(result[2], 16),
+        b: parseInt(result[3], 16)
+    } : null;
+  }
+
+  rgbToHexa(rgb: colorSet_rgb_value) {
+    return "#" + ((1 << 24) + (rgb.r << 16) + (rgb.g << 8) + rgb.b).toString(16).slice(1);
+  }
+
+  rgbToHsl(rgb: colorSet_rgb_value) {
+    var r = rgb.r / 255; var g = rgb.g / 255; var b = rgb.b / 255;
+    var max = Math.max(r, g, b), min = Math.min(r, g, b);
+    var h, s, l = (max + min) / 2;
+    if (max == min) {
+      h = s = 0; // achromatique
+    } else {
+      var d = max - min;
+      s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+      switch (max) {
+        case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+        case g: h = (b - r) / d + 2; break;
+        case b: h = (r - g) / d + 4; break;
+      }
+      h /= 6;
+    }
+    return {h: h, s: s, l: l};
+  }
+
+  hslToRgb(hsl: colorSet_hsl_value) {
+    var h = hsl.h; var s = hsl.s; var l = hsl.l;
+    var r, g, b;
+    if (s == 0) {
+      r = g = b = l;
+    } else {
+      function hue2rgb(p, q, t) {
+        if (t < 0) t += 1;
+        if (t > 1) t -= 1;
+        if (t < 1/6) return p + (q - p) * 6 * t;
+        if (t < 1/2) return q;
+        if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+        return p;
+      }
+      var q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+      var p = 2 * l - q;
+      r = hue2rgb(p, q, h + 1/3);
+      g = hue2rgb(p, q, h);
+      b = hue2rgb(p, q, h - 1/3);
+    }
+    return {r: Math.round(r * 255), g: Math.round(g * 255), b: Math.round(b * 255)};
+  }
+}
+
 /* --------------------------------- CLASS Translucent -------------------------------------------------*/
 
 class Translucent {
@@ -470,6 +590,7 @@ class MDI {
         }
       }
       this.container_elm.style.backgroundColor = this.parent.colorSet.secColor;
+      this.container_elm.style.borderColor = this.parent.colorSet.secBrdColor;
       // génération des sections
       this.lastSelectedElmIndex=0;
       for(var i=0; i < this.sections.length; ++i) {
@@ -490,6 +611,8 @@ class MDI {
           if(this.options.menuItemWidth) {
             this.setTabStyle(this.sections[i].tabElm, {width: this.options.menuItemWidth+"px"});
           }
+          this.sections[i].tabElm.style.backgroundColor = this.parent.colorSet.thrColor;
+          this.sections[i].tabElm.style.borderColor = this.parent.colorSet.thrBrdColor;
           (function(i, that){
             that.sections[i].tabElm.addEventListener("click", function(e) {
               let sectionToShowID = parent.id + "_section" + i.toString();
@@ -502,10 +625,10 @@ class MDI {
                 that.initTab(e.currentTarget);
                 let lastSelectedTab = document.getElementById(lastSelectedElm_id );
                 if(that.options.menuLayout == "horizontal") {
-                  that.setTabStyle(lastSelectedTab, {backgroundColor: that.parent.colorSet.thrColor, height: "40px", marginTop: "7px", borderBottomWidth: "1px", fontWeight: "normal", borderColor: "#8A8A8A"});
+                  that.setTabStyle(lastSelectedTab, {backgroundColor: that.parent.colorSet.thrColor, height: "40px", marginTop: "7px", borderBottomWidth: "1px", fontWeight: "normal", borderColor: that.parent.colorSet.thrBrdColor});
                 }
                 else {
-                  that.setTabStyle(lastSelectedTab, {backgroundColor: that.parent.colorSet.thrColor , height: "40px", marginLeft: "7px", borderRightWidth: "1px", fontWeight: "normal", borderColor: "#8A8A8A"});
+                  that.setTabStyle(lastSelectedTab, {backgroundColor: that.parent.colorSet.thrColor , height: "40px", marginLeft: "7px", borderRightWidth: "1px", fontWeight: "normal", borderColor: that.parent.colorSet.thrBrdColor});
                 }
                 if(that.options.menuItemWidth) {
                   that.setTabStyle(lastSelectedTab, {width: that.options.menuItemWidth+"px"});
@@ -537,6 +660,7 @@ class MDI {
       let spaceBetween = document.createElement("div");
       if(this.options.menuLayout == "horizontal") { spaceBetween.setAttribute("style", "border-bottom: 1px solid #AAAAAA; flex-grow: 1;"); }
       else { spaceBetween.setAttribute("style", "border-right: 1px solid #AAAAAA; flex-grow: 1;"); }
+      spaceBetween.style.borderBottomColor = this.parent.colorSet.secBrdColor;
       this.menu_elm.appendChild(spaceBetween);
       // Ajout du menu et du container
       this.elm.appendChild(this.menu_elm);
@@ -555,10 +679,10 @@ class MDI {
 
   initTab(tab) { //th: BABABA sec: D3D3D3
     if(this.options.menuLayout == "horizontal") {
-      this.setTabStyle(tab, {backgroundColor: this.parent.colorSet.secColor , height: "44px", marginTop: "3px", borderBottomWidth: "0px", fontWeight: "normal", borderColor: "#AAAAAA"});
+      this.setTabStyle(tab, {backgroundColor: this.parent.colorSet.secColor , height: "44px", marginTop: "3px", borderBottomWidth: "0px", fontWeight: "normal", borderColor: this.parent.colorSet.secBrdColor});
     }
     else if(this.options.menuLayout == "vertical") {
-      this.setTabStyle(tab, {backgroundColor: this.parent.colorSet.secColor, height: "44px", marginLeft: "3px", borderRightWidth: "0px", fontWeight: "normal", borderColor: "#AAAAAA"});
+      this.setTabStyle(tab, {backgroundColor: this.parent.colorSet.secColor, height: "44px", marginLeft: "3px", borderRightWidth: "0px", fontWeight: "normal", borderColor: this.parent.colorSet.secBrdColor});
     }
     if(this.options.menuItemWidth) {
       this.setTabStyle(tab, {width: this.options.menuItemWidth+4+"px"});
@@ -572,46 +696,6 @@ class MDI {
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////// Form dGUI ///////////////////////////////////////////////////////////
-
-class ColorSet {
-  prmColor: string;
-  secColor: string;
-  thrColor: string;
-  borderColor: string;
-  arr_baseIntensity: Array<string>;
-
-  constructor(color1: string, color2?: string, color3?: string) {
-    this.arr_baseIntensity = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "a", "b", "c", "d", "e", "f"];
-    this.prmColor = color1;
-    this.secColor = (color2) ? color2 : this.calculateColor(color1, 20);
-    this.thrColor = (color3) ? color3 : this.calculateColor(this.secColor, 40);
-    console.log(this.secColor);
-    console.log(this.thrColor);
-  }
-
-  calculateColor(hexa_color: string, diff: number) {
-    let r_1 = hexa_color.substr(1, 1);
-    let r_2 = hexa_color.substr(2, 1);
-    let g_1 = hexa_color.substr(3, 1);
-    let g_2 = hexa_color.substr(4, 1);
-    let b_1 = hexa_color.substr(5, 1);
-    let b_2 = hexa_color.substr(6, 1);
-    return "#" + this.addIntensity(r_1, r_2, diff) + this.addIntensity(g_1, g_2, diff) + this.addIntensity(b_1, b_2, diff); 
-  }
-
-  addIntensity(comp1: string, comp2: string, diff: number) {
-    let res_comp1 = this.arr_baseIntensity.indexOf(comp1) + 1;
-    let res_comp2 = this.arr_baseIntensity.indexOf(comp2) - diff + 1;
-    if(res_comp2 < 0) {
-      let remainning = (res_comp2 * -1 > 16) ? (res_comp2 * -1) % 16 : res_comp2 * -1;
-      let unities = (res_comp2 * -1 >= this.arr_baseIntensity.length) ? Math.round((res_comp2 * -1) / this.arr_baseIntensity.length) : 1;
-      console.log(unities);
-      res_comp2 = this.arr_baseIntensity.length - remainning;
-      res_comp1 -= unities;
-    }
-    return this.arr_baseIntensity[res_comp1-1] + this.arr_baseIntensity[res_comp2-1];
-  }
-}
 
 /* --------------------------------- Interfaces FormPannel ---------------------------------------------*/
 
