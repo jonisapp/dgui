@@ -152,10 +152,9 @@ html_element.addEventListener("contextmenu", (e) => {
 ![alt "contextmenus"](examples/contextMenu.png)
 ## <a name="3"></a> 3. API documentation
 ### 3.1 Fields
-* At the moment, a field can be of the following types : <span style="color: purple">message, button, text, quantity, choice, switch, select, date</span>
-* If type attribut is not specified, <span style="color: purple">text</span> is set by default.
-* key attribut is optional but allows 
-<br>
+* At the moment, a field can be of the following types : message, button, text, quantity, choice, switch, select, date.
+* If type attribut is not specified, text is set by default.
+
 #### Common attributs to describe all types of fields
 * key (string) : refer the field to access it during submission step
 * label (string) : text displayed on or above the field input
@@ -164,3 +163,9 @@ html_element.addEventListener("contextmenu", (e) => {
 * condition (boolean | {key: string, value: any}) : if true (external variable or function) or equals value of field associated (key), allows the field to be displayed
 * value (string, boolean, number)
 * input_elm (HTMLElement)
+
+#### select
+* list(Array<string>) : The options of a HTML select element. By default, the value of the field is set to the index in the list array.
+
+#### date
+* format (string) : specifies the date format for the field generation. For example it can takes "YYYY.MM.DD", "dd.mm.yyyy" or "DD:MM:YY"... At submission, date field will returns a ISO-8601 formatted string.
