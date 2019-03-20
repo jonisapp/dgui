@@ -130,33 +130,35 @@ class ColorSet {
   secBrdColor: string;
   thrColor: string;
   thrBrdColor: string;
+  fontColor: string;
   borderColor: string;
   arr_baseIntensity: Array<string>;
 
   constructor(color1: string, color2?: string, color3?: string) {
     this.arr_baseIntensity = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "a", "b", "c", "d", "e", "f"];
     this.prmColor = color1;
-    this.secColor = (color2) ? color2 : this.algo0(color1, 15);
-    this.secBrdColor = this.algo0(this.secColor, 30);
-    this.thrColor = (color3) ? color3 : this.algo0(this.secColor, 25);
-    this.thrBrdColor = this.algo0(this.thrColor, 50);
-  }
-
-  algo1(hexa_color: string, diff: number) {
-    let r_1 = hexa_color.substr(1, 1);
-    let r_2 = hexa_color.substr(2, 1);
-    let g_1 = hexa_color.substr(3, 1);
-    let g_2 = hexa_color.substr(4, 1);
-    let b_1 = hexa_color.substr(5, 1);
-    let b_2 = hexa_color.substr(6, 1);
-    return "#" + this.addIntensity(r_1, r_2, diff) + this.addIntensity(g_1, g_2, diff) + this.addIntensity(b_1, b_2, diff); 
+    // this.secColor = (color2) ? color2 : this.algo1(color1, 15);
+    // this.secBrdColor = this.algo1(this.secColor, 30);
+    // this.thrColor = (color3) ? color3 : this.algo1(this.secColor, 25);
+    // this.thrBrdColor = this.algo1(this.thrColor, 50);
+    // this.fontColor = this.algo1(this.thrColor, 80);
+    this.secColor = (color2) ? color2 : this.algo1(color1, 50);
+    this.secBrdColor = this.algo1(this.secColor, 80);
+    this.thrColor = (color3) ? color3 : this.algo1(this.secColor, 15);
+    this.thrBrdColor = this.algo1(this.thrColor, 150);
+    this.fontColor = this.algo1(this.thrColor, 200);
+    console.log(this.fontColor);
   }
 
   algo0(hexa_color: string, diff: number) {
-    return this.rgbToHexa(this.multiplyIntensity(hexa_color, diff));
+    return this.rgbToHexa(this.subtractMultiply(hexa_color, diff));
   }
 
-  multiplyIntensity(hexa_color: string, diff: number) {
+  algo1(hexa_color: string, diff: number) {
+    return this.rgbToHexa(this.addMultiply(hexa_color, diff));
+  }
+
+  subtractMultiply(hexa_color: string, diff: number) {
     let rgb = this.hexaToRgb(hexa_color);
     rgb.r = Math.round(rgb.r - (rgb.r * (diff / 200)));
     rgb.g = Math.round(rgb.g - (rgb.g * (diff / 200)));
@@ -164,7 +166,29 @@ class ColorSet {
     return rgb;
   }
 
-  addIntensity(comp1: string, comp2: string, diff: number) {
+  addMultiply(hexa_color: string, diff: number) {
+    let rgb = this.hexaToRgb(hexa_color);
+    rgb.r = Math.round(rgb.r + ((diff / 4) * (((rgb.g + rgb.b) / 2) / rgb.r)));
+    rgb.g = Math.round(rgb.g + ((diff / 4) * (((rgb.r + rgb.b) / 2) / rgb.g)));
+    rgb.b = Math.round(rgb.b + ((diff / 4) * (((rgb.r + rgb.g) / 2) / rgb.b)));
+    console.log("--------------------");
+    console.log(rgb.r);
+    console.log(rgb.g);
+    console.log(rgb.b)
+    return rgb;
+  }
+
+  algo2(hexa_color: string, diff: number) {
+    let r_1 = hexa_color.substr(1, 1);
+    let r_2 = hexa_color.substr(2, 1);
+    let g_1 = hexa_color.substr(3, 1);
+    let g_2 = hexa_color.substr(4, 1);
+    let b_1 = hexa_color.substr(5, 1);
+    let b_2 = hexa_color.substr(6, 1);
+    return "#" + this.add(r_1, r_2, diff) + this.add(g_1, g_2, diff) + this.add(b_1, b_2, diff); 
+  }
+
+  add(comp1: string, comp2: string, diff: number) {
     let int_comp1 = this.arr_baseIntensity.indexOf(comp1) + 1;
     let int_comp2 = this.arr_baseIntensity.indexOf(comp2) + 1;
     let unities = Math.round((diff + int_comp2) / 16);
@@ -806,7 +830,7 @@ class FormPannel {
       this.options = {};
     }
     if(!this.options.shape) {this.options.shape = "rounded";}
-    if(!this.options.color) {this.options.color = "#D3D3D3";}
+    if(!this.options.color) {console.log(this.options);this.options.color = "#D3D3D3";}
     this.colorSet = new ColorSet(this.options.color);
 
     this.elm = document.createElement("div");
@@ -837,7 +861,7 @@ class FormPannel {
     formPannelHeader.setAttribute("style", "padding: 7px");
     let formPannelTitle = document.createElement("div");
     setDefaultCursor(formPannelTitle);
-    formPannelTitle.setAttribute("style", "font-size: 18px; font-weight: bold; color: rgba(0, 0, 0, 0.86);");
+    formPannelTitle.setAttribute("style", "font-size: 18px; font-weight: bold; color: rgba(0, 0, 0, 0.86); color: #BFC6F9");
     formPannelTitle.textContent = this.title;
     formPannelHeader.appendChild(formPannelTitle);
     var formPannelBody = document.createElement("div");
@@ -956,6 +980,7 @@ class FormPannel {
 
   generateField(fieldsContainer, field_descriptor) {
     let field = new Field(field_descriptor, this);
+    field.input_elm.style.backgroundColor = this.colorSet.fontColor;
     // conditionnal field
     if(typeof field.condition !== "undefined") {
       if(typeof field.condition === "boolean") {

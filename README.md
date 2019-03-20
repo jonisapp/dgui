@@ -73,7 +73,7 @@ dgui.modalForm({
   form.end();
 });
 ```
-![alt "colored modals"](examples/coloredModals.png)
+![alt "colored modals"](examples/coloredModals2.png)
 ### <a name="2_3"></a> 2.3 Modal with MDI
 ```javascript
 dgui.modalForm({
@@ -142,7 +142,7 @@ html_element.addEventListener("contextmenu", (e) => {
           {label: "content", action: (target_elm) => {
             let target_id =  target_elm.dataset.id;
             let target = document.getElementById(target_id);
-            /* dGUI provides some usefull functions */
+            /* dGUI provides some useful functions */
             dgui.copyToClipboard(target.innerHTML);
           }}
         ]}
@@ -177,7 +177,7 @@ html_element.addEventListener("contextmenu", (e) => {
 * It is provided by function **contextMenu(event, description, callback)**.
 * Class ContextMenu can be described by providing an object containing **two attributs** : an array of **fields** and **initPosition** which can be **"bottom"** | **"right"** | **"left"** | **"mouse"**
 * It provides 3 types of fields : **button**, **switch** and **context**.
-* type attribut is not mandatory for context and button types. Indeed, by default type is set to button and context field has a context attribut.
+* type attribut is not mandatory for context and button types. Indeed, by default type is set to button and context field has a context attribut (which makes its type obvious).
 
 #### Common attributs to describe fields
 * **key** (string) : refers the field to access it during submission step

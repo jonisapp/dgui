@@ -29,6 +29,7 @@
     padding: 10px 20px 10px 20px;
     text-align: left;
     font-family: robotoRegular;
+    color: white;
 }
 
 .dgui-form-pannel-element-message {
@@ -100,6 +101,7 @@
 	font-size: 18px;
     cursor: default;
     font-family: 'robotoRegular';
+    color: #BFC6F9;
 }
 
 .dgui-top-tab-frameless {
