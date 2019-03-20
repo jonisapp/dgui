@@ -5,6 +5,8 @@
 [2. Code examples](#2)
 <br>
 [3. API documentation](#3)
+[3.1 API documentation](#3_1)
+[3.2 API documentation](#3_2)
 
 ## <a name="1"></a> 1. Overview
 ### Use cases
@@ -152,7 +154,7 @@ html_element.addEventListener("contextmenu", (e) => {
 ```
 ![alt "contextmenus"](examples/contextMenu.png)
 ## <a name="3"></a> 3. API documentation
-### 3.1 Fields
+### <a name="3_1"></a> 3.1 Fields
 * At the moment, a field can be of the following types : **message**, **button**, **text**, **quantity**, **choice**, **switch**, **select**, **date**.
 * If type attribut is not specified, text is set by default.
 
@@ -169,7 +171,7 @@ html_element.addEventListener("contextmenu", (e) => {
 #### Date field specific attribut
 * **format** (string) : specifies the date format for the field generation. For instance it can takes "YYYY.MM.DD", "dd.mm.yyyy" or "DD:MM:YY"... At submission, date field will return  a **ISO-8601** formatted string.
 
-### 3.2 Contextual menus
+### <a name="3_2"></a> 3.2 Contextual menus
 * A contextmenu can be triggered from **right click** or can be used as a **dropdown menu** by triggering it from a normal click event.
 * It is provided by function **contextMenu(event, description, callback)**.
 * Class ContextMenu can be described by providing an object containing **two attributs** : an array of **fields** and **initPosition** which can be **"bottom"** | **"right"** | **"left"** | **"mouse"**
