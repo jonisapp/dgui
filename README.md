@@ -73,7 +73,7 @@ dgui.modalForm({
   form.end();
 });
 ```
-![alt "colored modals"](examples/coloredModals2.png)
+![alt "colored modals"](examples/coloredModals1.png)
 ### <a name="2_3"></a> 2.3 Modal with MDI
 ```javascript
 dgui.modalForm({
