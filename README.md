@@ -3,8 +3,8 @@
 1. [Overview](#1)
 1. [Code examples](#2)
 1. [API documentation](#3)
-	1. [API documentation](#3_1)
-	1. [API documentation](#3_2)
+	[3.1 Fields](#3_1)
+	[3.2 Contextual menus](#3_2)
 
 ## <a name="1"></a> 1. Overview
 ### Use cases
