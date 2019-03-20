@@ -12,14 +12,14 @@
 * All kinds of Webapps
 * Cloud computing platforms
 ### To whom is it addressed ?
-* Developpers who want to focus on data and logic rather than graphics
+* Developpers who want to **focus on data and logic** rather than graphics
 * People who believe in "one task at a time design" philosphy
 ### Features
 * The view is entirely self-generated
-* Clean and simple syntax
-* A lot of code economy
+* Clean and **simple syntax**
+* A lot of **code economy**
 * integrate well in any kind of environment
-* default labels's translations are avaible in english and french
+* default labels's **translations** are avaible in **english** and **french**
 * form elements
 * MDI elements
 * modals
@@ -156,17 +156,34 @@ html_element.addEventListener("contextmenu", (e) => {
 * At the moment, a field can be of the following types : **message**, **button**, **text**, **quantity**, **choice**, **switch**, **select**, **date**.
 * If type attribut is not specified, text is set by default.
 
-#### Common attributs to describe all types of fields
-* **key** (string) : refer the field to access it during submission step
+#### Common attributs
+* **key** (string) : refers the field to access it during submission step
 * **label** (string) : text displayed on or above the field input
-* **initValue** (string, boolean, number) : the value to be displayed at init.
+* **initValue** (string, boolean, number) : the value to be displayed at init
 * **size** (number) : specifies the field's width
-* **condition** (boolean | {key: string, value: any}) : if true (external variable or function) or equals value of field associated (key), allows the field to be displayed
-* **value** (string, boolean, number)
-* **input_elm** (HTMLElement)
+* **condition** (boolean | {key: string, value: any}) : if true (external variable or function) or equals value of field associated (key), displays the field at init.
 
 #### select
-* **list**(Array<string>) : The options of a HTML select element. By default, the value of the field is set to the index in the list array.
+* **list** (Array<string>) : The options of a HTML select element. By default, the value of the field is set to the index in the list array.
 
 #### date
-* **format** (string) : specifies the date format for the field generation. For example it can takes "YYYY.MM.DD", "dd.mm.yyyy" or "DD:MM:YY"... At submission, date field will return  a **ISO-8601** formatted string.
+* **format** (string) : specifies the date format for the field generation. For instance it can takes "YYYY.MM.DD", "dd.mm.yyyy" or "DD:MM:YY"... At submission, date field will return  a **ISO-8601** formatted string.
+
+### 3.2 Contextual menus
+* A contextmenu can be triggered from **right click** or can be used as a **dropdown menu** by triggering it from a normal click event.
+* It is provided by function **contextMenu(event, description, callback)**.
+* Class ContextMenu can be described by providing an object containing **two attributs** : an array of **fields** and **initPosition** which can be **"bottom"** | **"right"** | **"left"** | **"mouse"**
+* It provides 3 types of fields : **button**, **switch** and **context**.
+* type attribut is not mandatory for context and button types. Indeed, by default type is set to button and context field has a context attribut.
+
+#### Common attributs to describe fields
+* **key** (string) : refers the field to access it during submission step
+* **label** (string) : text displayed on the field
+* **condition** (boolean) : if true (external variable or function), displays the field at init.
+* **action** (Function) : triggered by the a click on the field.
+* elm (HTMLDivElement)
+
+#### Switch field attributs
+* **initValue** (boolean)
+* **switchLock** (boolean) : specifies if a click on a switch keeps the contextmenu opened or not
+* **group** (string) : if two or more switches belong to the same group, the last one to be switched on causes the others to be switched off

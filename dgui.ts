@@ -1306,6 +1306,7 @@ class ContextMenu {
   target: any;
   options: contextMenu_options;
   fields: Array<contextMenu_field>;
+  contextFields: Array<contextMenu_field>;
   selected_items: Array<string>;
   mouseover: boolean;
   // methods
@@ -1326,6 +1327,7 @@ class ContextMenu {
       this.target = parentAttributes.target;
       this.parent_menu = parentAttributes.parent_menu;
     }
+    this.contextFields = [];
     this.selected_items = [];
     this.mouseover = false;
     //                                            - Initial DOM setup -
@@ -1395,6 +1397,7 @@ class ContextMenu {
           arrow_container.appendChild(arrow);
           field.elm.appendChild(label);
           field.elm.appendChild(arrow_container);
+          this.contextFields.push(field);
         }
         if(field.type == "switch") {
           if(field.initValue) {
@@ -1406,14 +1409,7 @@ class ContextMenu {
         /*                                        - Fields init events -                                */
         if(field.type != "context") {
           field.elm.addEventListener("mouseover", () => {
-            that.fields.forEach((field) => {
-              if(field.type == "context") {
-                if(field.contextMenuObj) {
-                  field.contextMenuObj.close();
-                  delete field.contextMenuObj;
-                }
-              }
-            });
+            that.closeContextFields();
           });
           if(field.type == "switch") {
             field.elm.addEventListener("click", (event) => {
@@ -1471,6 +1467,7 @@ class ContextMenu {
               if(!field.contextMenu.options.initPosition) {
                 field.contextMenu.options.initPosition = "right";
               }
+              this.closeContextFields();
               field.contextMenuObj = new ContextMenu(event, field.contextMenu, callback, {parent: field, parent_menu: that, target: that.target});
               field.elm.addEventListener("mouseleave", (event) => {
                 event.stopPropagation();
@@ -1516,17 +1513,34 @@ class ContextMenu {
       this.elm.style.left = htmlTargetPosition.left - this.elm.offsetWidth + window.scrollX + "px";
       this.elm.style.top = htmlTargetPosition.top + window.scrollY + "px";
     }
-    let elm_htmlPosition = this.elm.getBoundingClientRect();
-    if(elm_htmlPosition.right > window.innerWidth) {
-      if(this.parent_menu) {
-        let parentElm_htmlPosition = this.parent.elm.getBoundingClientRect();
-        this.elm.style.left = parentElm_htmlPosition.left - elm_htmlPosition.width+"px";
-        this.parent_menu.options.initPosition = "left";
-      }
-    }
+    this.adaptPosition("left", "right", "width", "innerWidth");
+    this.adaptPosition("top", "bottom", "height", "innerHeight");
     setTimeout(() => {
       document.body.addEventListener("mousedown", this.event_close);
     }, 10);
+  }
+
+  adaptPosition(position1, position2, dimension, win_dimension) {
+    let elm_htmlPosition = this.elm.getBoundingClientRect();
+    if(elm_htmlPosition[position2] > window[win_dimension]) {
+      if(this.parent_menu) {
+        let parentElm_htmlPosition = this.parent.elm.getBoundingClientRect();
+        this.elm.style[position1] = parentElm_htmlPosition[position1] - elm_htmlPosition[dimension]+"px";
+        this.parent_menu.options.initPosition = position1;
+      }
+      else {
+        this.elm.style[position1] = elm_htmlPosition[position1] - elm_htmlPosition[dimension]+"px";
+      }
+    }
+  }
+
+  closeContextFields() {
+    this.contextFields.forEach((field) => {
+      if(field.contextMenuObj) {
+        field.contextMenuObj.close();
+        delete field.contextMenuObj;
+      }
+    });
   }
 
   changeColor (elm, bg, c) {
