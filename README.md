@@ -152,13 +152,15 @@ html_element.addEventListener("contextmenu", (e) => {
 ![alt "contextmenus"](examples/contextMenu.png)
 ## <a name="3"></a> 3. API documentation
 ### 3.1 Fields
-At the moment, a field can be of the following types : message, button, text, quantity, choice, switch, select, date.
+* At the moment, a field can be of the following types : <span style="color: purple">message, button, text, quantity, choice, switch, select, date</span>
+* If type attribut is not specified, <span style="color: purple">text</span> is set by default.
+* key attribut is optional but allows 
 <br>
 #### Common attributs to describe all types of fields
 * key (string) : refer the field to access it during submission step
 * label (string) : text displayed on or above the field input
 * initValue (string, boolean, number) : the value to display at init.
-* value (string, boolean, number)
 * size (number) : specifies the field's width
-* condition (boolean | {key: string, value: any}) : if true (external variable or function) or equals value of field associated (key), allow the field to be displayed
+* condition (boolean | {key: string, value: any}) : if true (external variable or function) or equals value of field associated (key), allows the field to be displayed
+* value (string, boolean, number)
 * input_elm (HTMLElement)
