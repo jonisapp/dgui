@@ -24,9 +24,9 @@
 * (soon) selection tool
 * (soon) theming
 ### Why is dGUI a powerful tool ?
-* You write write a few lines, you get the equivalent of hundreds lines of HTML, javascript and CSS code.
+* You write a few lines, you get the equivalent of hundreds lines of HTML, javascript and CSS code.
 * The generated code stays cached only as long as your interface need it.
-* Managing server requests can sometimes be very tricky. dGUI makes data control and errors handling easier, leaving you free to process your data and logic at different scales : initialization (conditional fields), formPannel submission, MDI submission... 
+* Managing server requests can sometimes be very tricky. dGUI makes data control and errors handling easier, leaving you free to process your data and logic at different scales : initialization (conditional fields), formPannel submission, MDI section submission... 
 * You can easily lay out the content according to which parameters are important in your UI. For instance, you might want to adjust the fields's size only depending on the container's width, or maybe have three fields of same size horizontaly layered (all you have to do is putting them in an array, as described in a further example thereafter).
 ## <a name="2"></a> 2. Code examples
 ### Common dialog boxes
