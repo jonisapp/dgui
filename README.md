@@ -1,12 +1,12 @@
 # dGUI - Interface elements generator library including data and events handling
 
-[1. Overview](#1)
+1. [Overview](#1)
 <br>
-[2. Code examples](#2)
+1. [Code examples](#2)
 <br>
-[3. API documentation](#3)
-[3.1 API documentation](#3_1)
-[3.2 API documentation](#3_2)
+1. [API documentation](#3)
+	1. [API documentation](#3_1)
+	1. [API documentation](#3_2)
 
 ## <a name="1"></a> 1. Overview
 ### Use cases
