@@ -82,7 +82,7 @@ var translations = {
   },
   messages: {
     serverError: {
-      en: "An error has occured on the server. Please try to submit your request again. If the error persists, please contact the administrator, giving him the details of the error thereafter.",
+      en: "An error has occured on the server. Please try to submit your request again. If the error persists, please contact the administrator, giving him the details of the error thereafter :",
       fr: "Une erreur est survenue sur le serveur. Veuillez soumettre votre requête à nouveau. Si l'erreur persiste, prière de contacter l'administrateur, en lui communiquant les détails de l'erreur ci-après :"
     }
   },

@@ -19,6 +19,7 @@
 * Clean and simple syntax
 * A lot of code economy
 * integrate well in any kind of environment
+* default labels's translations are avaible in english and french
 * form elements
 * MDI elements
 * modals
@@ -26,10 +27,10 @@
 * (soon) selection tool
 * (soon) theming
 ### Why is dGUI a powerful tool ?
-* You write a few lines, you get the equivalent of hundreds lines of HTML, javascript and CSS code.
+* You write a **few lines**, you get the **equivalent of hundreds lines** of HTML, javascript and CSS code.
 * The generated code stays cached only as long as your interface need it.
-* Managing server requests can sometimes be very tricky. dGUI makes data control and errors handling easier, leaving you free to process your data and logic at different scales : initialization (conditional fields), formPannel submission, MDI section submission... 
-* You can easily lay out the content according to which parameters are important in your UI. For instance, you might want to adjust the fields's size only depending on the container's width, or maybe have three fields of same size horizontaly layered (all you have to do is putting them in an array, as described in a further example thereafter).
+* Managing server requests can sometimes be very tricky. dGUI makes **data control and errors handling easier**, leaving you free to process your data and logic at different scales : initialization (conditional fields), formPannel submission, MDI section submission... 
+* You can **easily lay out the content** according to which parameters are important in your UI. For instance, you might want to adjust the fields's size only depending on the container's width, or maybe have three fields of same size horizontaly layered (all you have to do is putting them in an array, as described in a further example thereafter).
 ## <a name="2"></a> 2. Code examples
 ### Common dialog boxes
 ```javascript
@@ -152,20 +153,20 @@ html_element.addEventListener("contextmenu", (e) => {
 ![alt "contextmenus"](examples/contextMenu.png)
 ## <a name="3"></a> 3. API documentation
 ### 3.1 Fields
-* At the moment, a field can be of the following types : message, button, text, quantity, choice, switch, select, date.
+* At the moment, a field can be of the following types : **message**, **button**, **text**, **quantity**, **choice**, **switch**, **select**, **date**.
 * If type attribut is not specified, text is set by default.
 
 #### Common attributs to describe all types of fields
-* key (string) : refer the field to access it during submission step
-* label (string) : text displayed on or above the field input
-* initValue (string, boolean, number) : the value to display at init.
-* size (number) : specifies the field's width
-* condition (boolean | {key: string, value: any}) : if true (external variable or function) or equals value of field associated (key), allows the field to be displayed
-* value (string, boolean, number)
-* input_elm (HTMLElement)
+* **key** (string) : refer the field to access it during submission step
+* **label** (string) : text displayed on or above the field input
+* **initValue** (string, boolean, number) : the value to be displayed at init.
+* **size** (number) : specifies the field's width
+* **condition** (boolean | {key: string, value: any}) : if true (external variable or function) or equals value of field associated (key), allows the field to be displayed
+* **value** (string, boolean, number)
+* **input_elm** (HTMLElement)
 
 #### select
-* list(Array<string>) : The options of a HTML select element. By default, the value of the field is set to the index in the list array.
+* **list**(Array<string>) : The options of a HTML select element. By default, the value of the field is set to the index in the list array.
 
 #### date
-* format (string) : specifies the date format for the field generation. For example it can takes "YYYY.MM.DD", "dd.mm.yyyy" or "DD:MM:YY"... At submission, date field will returns a ISO-8601 formatted string.
+* **format** (string) : specifies the date format for the field generation. For example it can takes "YYYY.MM.DD", "dd.mm.yyyy" or "DD:MM:YY"... At submission, date field will return  a **ISO-8601** formatted string.
