@@ -1,17 +1,18 @@
 # dGUI - Interface elements generator library including data and events handling
 
-[1. Use cases](#1)
+[Use cases](#1)
 <br>
-[2. Code examples](#2)
+[Code examples](#2)
 
-## <a name="1"></a> 1. Use cases
+## <a name="1"></a> Overview
+### Use cases
 * Meteor applications (dGUI was developped in this context)
 * Webapps
 * Cloud computing platforms
-## To whom is it addressed ?
+### To whom is it addressed ?
 * Developpers who want to focus on data and logic rather than graphics
 * People who believe in "one task at a time design" philosphy
-## Features
+### Features
 * View is entirely self-generated
 * Clean and simple syntax
 * A lot of code economy
@@ -22,7 +23,7 @@
 * contextual menus
 * (soon) selection tool
 * (soon) theming
-## <a name="2"></a> 2. Code examples
+## <a name="2"></a> Code examples
 ### Common dialog boxes
 ```javascript
 dgui.alert("Hello world, from dgui !");
