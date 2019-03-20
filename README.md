@@ -2,6 +2,9 @@
 
 1. [Overview](#1)
 1. [Code examples](#2)
+	1. [Common dialog boxes](#2_1)
+	1. [Easy colors](#2_2)
+	1. [Modal with MDI](#2_3)
 1. [API documentation](#3)
 	1. [Fields](#3_1)
 	1. [Contextual menus](#3_2)
@@ -32,7 +35,7 @@
 * Managing server requests can sometimes be very tricky. dGUI makes **data control and errors handling easier**, leaving you free to process your data and logic at different scales : initialization (conditional fields), formPannel submission, MDI section submission... 
 * You can **easily lay out the content** according to which parameters are important in your UI. For instance, you might want to adjust the fields's size only depending on the container's width, or maybe have three fields of same size horizontaly layered (all you have to do is putting them in an array, as described in a further example thereafter).
 ## <a name="2"></a> 2. Code examples
-### Common dialog boxes
+### <a name="2_1"></a> 2.1 Common dialog boxes
 ```javascript
 dgui.alert("Hello world, from dgui !");
 
@@ -47,7 +50,7 @@ dgui.prompt("May I ask you to indicate your name ?", "Entry", (ans) => {
 ```
 ![alt "common dialog boxes"](examples/commonDialogsBoxes.png)
 
-### Easy coloring
+### <a name="2_2"></a> 2.2 Easy colors
 ```javascript
 dgui.modalForm({
   title: "My modal form !",
@@ -71,7 +74,7 @@ dgui.modalForm({
 });
 ```
 ![alt "colored modals"](examples/coloredModals.png)
-### Modal and MDI
+### <a name="2_3"></a> 2.3 Modal with MDI
 ```javascript
 dgui.modalForm({
   title: "My modal form !",
