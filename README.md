@@ -1,6 +1,7 @@
 # dGUI - Interface elements generator library including data and events handling
 
 [1. Use cases](#1)
+<br>
 [2. Code examples](#2)
 
 ## <a name="1"></a> 1. Use cases
