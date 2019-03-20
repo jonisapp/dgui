@@ -1,7 +1,7 @@
 # dGUI - Interface elements generator library including data and events handling
 
-1. [Use cases](#1)
-2. [Code examples](#2)
+[1. Use cases](#1)
+[2. Code examples](#2)
 
 ## <a name="1"></a> 1. Use cases
 * Meteor applications (dGUI was developped in this context)
