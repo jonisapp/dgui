@@ -61,6 +61,55 @@ export function setDefaultCursor(elm: any) {
   elm.style.cursor = "default";
 }
 
+/* --------------------------------- dGUI configuration  -----------------------------------------------*/
+
+var translations = {
+  titles: {
+    information: {en: "Information", fr: "Information"},
+    entry: {en: "Entry", fr: "Saisie"},
+    choice: {en: "Choice", fr: "Choix"},
+    confirm: {en: "Confirm", fr: "Confirmation"},
+    serverError: {en: "Server error", fr: "Erreur sur le serveur"}
+  },
+  buttons: {
+    ok: {en: "Ok", fr: "D'accord"},
+    cancel: {en: "Cancel", fr: "Annuler"},
+    submit: {en: "Submit", fr: "Soumettre"},
+    valid: {en: "Valid", fr: "Valider"},
+    confirm: {en: "Confirm", fr: "Confirmer"},
+    yes: {en: "Yes", fr: "Oui"},
+    no: {en: "No", fr: "Non"}
+  },
+  messages: {
+    serverError: {
+      en: "An error has occured on the server. Please try to submit your request again. If the error persists, please contact the administrator, giving him the details of the error thereafter.",
+      fr: "Une erreur est survenue sur le serveur. Veuillez soumettre votre requête à nouveau. Si l'erreur persiste, prière de contacter l'administrateur, en lui communiquant les détails de l'erreur ci-après :"
+    }
+  },
+  labels: {
+    year: {en: "Year", fr: "Année"},
+    month: {en: "Month", fr: "Mois"},
+    day: {en: "Day", fr: "Jour"}
+  }
+};
+
+var language = "fr";
+
+var tr = {
+  title: (value: string) => {
+    return translations.titles[value][language];
+  },
+  btn: (value: string) => {
+    return translations.buttons[value][language];
+  },
+  msg: (value: string) => {
+    return translations.messages[value][language];
+  },
+  lbl: (value: string) => {
+    return translations.labels[value][language];
+  }
+}
+
 /* --------------------------------- CLASS Colorset ----------------------------------------------------*/
 
 interface colorSet_rgb_value {
@@ -87,11 +136,9 @@ class ColorSet {
   constructor(color1: string, color2?: string, color3?: string) {
     this.arr_baseIntensity = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "a", "b", "c", "d", "e", "f"];
     this.prmColor = color1;
-    console.log(this.prmColor);
-    this.secColor = (color2) ? color2 : this.algo0(color1, 20);
-    console.log(this.secColor);
+    this.secColor = (color2) ? color2 : this.algo0(color1, 15);
     this.secBrdColor = this.algo0(this.secColor, 30);
-    this.thrColor = (color3) ? color3 : this.algo0(this.secColor, 30);
+    this.thrColor = (color3) ? color3 : this.algo0(this.secColor, 25);
     this.thrBrdColor = this.algo0(this.thrColor, 50);
   }
 
@@ -111,9 +158,7 @@ class ColorSet {
 
   multiplyIntensity(hexa_color: string, diff: number) {
     let rgb = this.hexaToRgb(hexa_color);
-    console.log(rgb.r);
     rgb.r = Math.round(rgb.r - (rgb.r * (diff / 200)));
-    console.log(rgb.r);
     rgb.g = Math.round(rgb.g - (rgb.g * (diff / 200)));
     rgb.b = Math.round(rgb.b - (rgb.b * (diff / 200)));
     return rgb;
@@ -268,10 +313,11 @@ class Field {
 
   /*                                              - Définition -                                        */
   // user
-  type: "message" | "button" | "text" | "quantity" | "choice" | "switch" | "select";
+  type: "message" | "button" | "text" | "quantity" | "choice" | "switch" | "select" | "date";
   key: string;
   name: string;
   label: string;
+  submit: boolean;
   value: string | boolean | number;
   size: number;
   list: Array<string> | Array<Object>;
@@ -282,6 +328,9 @@ class Field {
   // constroller
   parent?: FormPannel;
   input_elm: any;
+  date_inputs_elm?: Array<HTMLInputElement>;
+  date_labels_elm?: Array<HTMLLabelElement>;
+  date_units: Array<string>;
   button_elm: HTMLButtonElement;
   label_elm: HTMLLabelElement;
   elm: any;
@@ -350,6 +399,47 @@ class Field {
         this.button_elm.setAttribute("class", this.BSClass);
         this.button_elm.textContent = this.label;
         this.button_elm.addEventListener("click", that.action);
+      case "date":
+        if(!field.format) {field.format = "YYYY.MM.AA"}
+        let format_arr = field.format.split(".");
+        this.input_elm = document.createElement("input"); this.input_elm.setAttribute("type", "hidden");
+        this.date_inputs_elm = []; this.date_labels_elm = []; this.date_units = [];
+        format_arr.forEach((unit: string) => {
+          let input = document.createElement("input");
+          input.type = "number"; input.min = "1"; input.setAttribute("class", "form form-control");
+          let label = document.createElement("label");
+          switch(unit) {
+            case "YYYY": case "YY": case "yyyy": case "yy":
+              input.min = (1970 + Math.round(Date.now() / 31536000000)).toString();
+              if(unit == "YY") {
+                input.min = input.min.substr(2, 2);
+              }
+              label.textContent = tr.lbl("year"); break;
+            case "MM": case "mm":
+              input.max = "12";
+              label.textContent = tr.lbl("month"); break;
+            case "DD": case "dd":
+              input.max = "32";
+              label.textContent = tr.lbl("day"); break;
+          }
+          input.setAttribute("data-type", unit);
+          input.addEventListener("input", () => {
+            let date_comps = {y: null, m: null, d: null}; let indexes = [];
+            that.date_inputs_elm.forEach((elm, i) => {
+              if(elm.value.length == 1) { elm.value = "0" + elm.value; }
+              if(elm.dataset.type == "DD" || elm.dataset.type == "dd") { date_comps.d = i; }
+              else if(elm.dataset.type == "MM" || elm.dataset.type == "mm") { date_comps.m = i; }
+              else { date_comps.y = i; }
+            });
+            let dIElm = that.date_inputs_elm;
+            let y_value = (dIElm[date_comps.y].value.length == 4) ? dIElm[date_comps.y].value : "20"+dIElm[date_comps.y].value;
+            that.input_elm.value = y_value + "-" + dIElm[date_comps.m].value + "-" + dIElm[date_comps.d].value;
+          });
+          this.date_units.push(unit);
+          this.date_labels_elm.push(label);
+          this.date_inputs_elm.push(input);
+        });
+        break;
       case "text": case "password": case "quantity":
         if(field.label) {
           this.label_elm = document.createElement("label");
@@ -369,13 +459,13 @@ class Field {
         if(field.max) {
           this.input_elm.setAttribute("maxlength", field.max);
         }
-        if(typeof this.initValue !== "undefined") {
-          this.input_elm.value = this.initValue;
-        }
-        else {
-          this.initValue = "";
-        } break;
+        break;
       case "select":
+      if(field.label) {
+          this.label_elm = document.createElement("label");
+          this.label_elm.textContent = field.label;
+          this.label_elm.setAttribute("style", "text-align: left");
+        }
         if(this.list) {
           this.input_elm = document.createElement("select");
           this.input_elm.setAttribute("class", "form form-control");
@@ -414,10 +504,17 @@ class Field {
         this.input_elm.value = "1";
       }
     }
+    if(typeof field.initValue !== "undefined") {
+      this.input_elm.value = this.initValue;
+    }
     /*                                            - init display -                                      */
     this.elm = document.createElement("div");
-    if(field.type != "message") {
+    if(field.type != "message" && field.type != "date") {
       this.elm.setAttribute("class", "dgui-form-pannel-element");
+    }
+    else if(field.type == "date") {
+      console.log("coucou");
+      this.elm.setAttribute("class", "dgui-form-pannel-layout");
     }
     else {
       this.elm.setAttribute("class", "dgui-form-pannel-element-message");
@@ -445,32 +542,26 @@ class Field {
     else if(this.type == "button") {
       this.elm.appendChild(this.button_elm);
     }
-    else if(field.type == "text" || field.type == "password") {
+    else if(field.type == "text" || field.type == "password" || field.type == "select" || field.type == "quantity") {
       if(field.label) {
         this.elm.appendChild(this.label_elm);
       }
       this.elm.appendChild(this.input_elm);
     }
+    else if(field.type == "date") {
+      for(let i = 0; i < this.date_inputs_elm.length; ++i) {
+        let date_layer = document.createElement("div");
+        date_layer.setAttribute("class", "dgui-form-pannel-element");
+        date_layer.setAttribute("style", "padding-left: 5px; padding-right: 5px; flex: 1;");
+        date_layer.style.flex = (this.date_units[i] == "YYYY") ? "2" : "1"; 
+        date_layer.appendChild(this.date_labels_elm[i]);
+        date_layer.appendChild(this.date_inputs_elm[i]);
+        this.elm.appendChild(date_layer);
+      }
+      this.elm.style.paddingLeft = "15px"; this.elm.style.paddingRight = "15px";
+    }
     else {
       this.elm.appendChild(this.input_elm);
-    }
-    /*                                            - display according to condition -                    */
-    if(typeof this.condition !== "undefined") {
-      if(typeof this.condition === "boolean") {
-        if(this.condition === false) {
-          this.elm.style.display = "none";
-        }
-      }
-      else if((this.condition.key && this.condition.value) && this.parent) {
-        this.parent.fields.forEach((field) => {
-          if(field.key == this.condition.key) {
-            that.check_condition(field);
-            field.input_elm.addEventListener("input", (e) => {
-              that.check_condition(e.currentTarget);
-            });
-          }
-        });
-      }
     }
   }
 
@@ -701,6 +792,7 @@ class FormPannel {
   // controller
   colorSet: ColorSet;
   groups: Array<formPannel_fieldGroup>;
+  conditionalFields: Array<Field>; 
 
   constructor(properties, parent) {
     var that = this;
@@ -708,7 +800,7 @@ class FormPannel {
       this[property] = properties[property];
     }
     this.parent = parent;
-    this.groups = [];
+    this.groups = []; this.conditionalFields = [];
 
     if(!this.options) {
       this.options = {};
@@ -736,6 +828,7 @@ class FormPannel {
     let fields = this.fields;
     this.fields = [];
     this.generateFields(that, fields, scrollElm);
+    this.initConditinalFields();
     this.elm.appendChild(scrollElm);
 
     this.initDisplay();
@@ -794,18 +887,18 @@ class FormPannel {
   generateFields(fieldsContainer, fields, scrollElm) {
     var that = this;
     if(fields) {
-      fields.forEach(function(field_s) {
-        if(Array.isArray(field_s)) {
+      fields.forEach(function(field_s_descriptor) {
+        if(Array.isArray(field_s_descriptor)) {
           var formPannelLayout = document.createElement("div");
           formPannelLayout.setAttribute("class", "dgui-form-pannel-layout");
-          var reduce_padding = (field_s.length > 1) ? true : false;
+          var reduce_padding = (field_s_descriptor.length > 1) ? true : false;
           if(reduce_padding) {
             formPannelLayout.style.paddingLeft = 15+"px";
             formPannelLayout.style.paddingRight = 15+"px";
           }
           var fields_inputs = [];
-          field_s.forEach(function(field) {
-            field = new Field(field, that);
+          field_s_descriptor.forEach(function(field) {
+            field = that.generateField(fieldsContainer, field);
             // Groups
             if(field.group) {
               var group_index= -1;
@@ -827,13 +920,13 @@ class FormPannel {
               }
             }
             fields_inputs.push({input: field.input_elm, max: (field.max) ? field.max : null});
-            fieldsContainer.fields.push(field);
             if(reduce_padding) {
               field.elm.style.paddingLeft = 5+"px";
               field.elm.style.paddingRight = 5+"px";
             }
             formPannelLayout.appendChild(field.elm);
           });
+          // Set field max attribut
           for(let i = 0; i < fields_inputs.length; ++i) {
             if(fields_inputs[i].max) {
               fields_inputs[i].input.addEventListener("input", (e) => {
@@ -854,13 +947,41 @@ class FormPannel {
           scrollElm.appendChild(formPannelLayout);
         }
         else {
-          let field = new Field(field_s, that);
-          fieldsContainer.fields.push(field);
+          let field = that.generateField(fieldsContainer, field_s_descriptor);
           scrollElm.appendChild(field.elm);
         }
       });
     }
-    console.log(this.groups);
+  }
+
+  generateField(fieldsContainer, field_descriptor) {
+    let field = new Field(field_descriptor, this);
+    // conditionnal field
+    if(typeof field.condition !== "undefined") {
+      if(typeof field.condition === "boolean") {
+        if(field.condition === false) {
+          field.elm.style.display = "none";
+        }
+      }
+      else if(field.condition.key && field.condition.value) {
+        this.conditionalFields.push(field);
+      }
+    }
+    fieldsContainer.fields.push(field);
+    return field;
+  }
+
+  initConditinalFields() {
+    this.conditionalFields.forEach((conditionnalField) => {
+      this.fields.forEach((field) => {
+        if(field.key == conditionnalField.condition.key) {
+          conditionnalField.check_condition(field.input_elm);
+          field.input_elm.addEventListener("input", (e) => {
+            conditionnalField.check_condition(e.currentTarget);
+          });
+        }
+      });
+    });
   }
   
   initDisplay() {
@@ -887,8 +1008,8 @@ class FormPannel {
 
     if(typeof this.footer === "undefined") {
       this.footer = [
-        {action: "submit", value: "Submit", BSClass: "btn-success"},
-        {action: "abort", value: "Cancel", BSClass: "btn-warning"}
+        {action: "submit", value: tr.btn("valid"), BSClass: "btn-success"},
+        {action: "abort", value: tr.btn("cancel"), BSClass: "btn-warning"}
       ];
     }
     this.footer_elm = document.createElement("div");
@@ -963,6 +1084,17 @@ class FormPannel {
     }, errorMessage: function(message) {
       that.errorMessage_elm.textContent = message;
       that.errorMessage_elm.style.display = "block";
+    }, serverError: function(err) {
+      if(err) {
+        modalForm({
+          title: tr.title("serverError"),
+          fields: [
+            {type: "message", message: tr.msg("serverError")},
+            {type: "message", message: "<div style='background-color: white; width: 100%; padding: 5px; color: red'>" + err + "</div>"}
+          ], footer: [{value: tr.btn("ok"), action: "quit", BSClass: "btn-success"}],
+          options: {width: 600, color: "#ff5151"}
+        }, ()=> {});
+      }
     }});
   }
 
@@ -1007,9 +1139,9 @@ class FormPannel {
 
   submitField(field, values) {
     let initValue = (typeof field.initValue !== "undefined") ? field.initValue : "";
-    if(field.type == "text" || field.type == "password" || field.type == "quantity" || field.type == "select") {
+    if(field.type == "text" || field.type == "password" || field.type == "quantity" || field.type == "select" || field.type == "date") {
       // On ne soumet que les champs dont la valeur a été modifiée
-      if(field.input_elm.value != initValue) {
+      if(field.input_elm.value != initValue || field.submit === true) {
         // Si le champs possède un attribut key il sera renvoyé sous forme d'objet (key: value)
         if(typeof field.key !== "undefined") {
           let objTextField = {};
@@ -1386,7 +1518,6 @@ class ContextMenu {
     }
     let elm_htmlPosition = this.elm.getBoundingClientRect();
     if(elm_htmlPosition.right > window.innerWidth) {
-      console.log("on est dans ce cas");
       if(this.parent_menu) {
         let parentElm_htmlPosition = this.parent.elm.getBoundingClientRect();
         this.elm.style.left = parentElm_htmlPosition.left - elm_htmlPosition.width+"px";
@@ -1415,40 +1546,40 @@ export function alert(message: string | Error, title?: string, callback?: Functi
   callback = callback || function(){};
   message = (message instanceof Error) ? message.message : message;
   new modal({
-    title: title || "Information",
+    title: title || tr.title("information"),
     fields: [{type: "message", message: message}],
     footer: [{action: "quit", value: "Ok", BSClass: "btn-success"}]
   }, callback);
 }
 
-export function confirm(message: string, title="Confirm", callback: Function) {
+export function confirm(message: string, title = tr.title("confirm"), callback: Function) {
   if(typeof title == "function") {
     callback = title;
-    title = "Confirmation";
+    title = tr.title("confirm");
   }
   new modal({
     title: title,
     fields: [{type: "message", message: message}],
     footer: [
-      {action: "confirm", value: "Confirm", BSClass: "btn-danger"},
-      {action: "abort", value: "Cancel", BSClass: "btn-warning"}
+      {action: "confirm", value: tr.btn("confirm"), BSClass: "btn-danger"},
+      {action: "abort", value: tr.btn("cancel"), BSClass: "btn-warning"}
     ]
   }, callback);
 }
 
-export function prompt(message, title="Entry", callback, maxWidth=500) {
+export function prompt(message, title = tr.title("entry"), callback, maxWidth=500) {
   new modal({
     title: title,
     fields: [{type: "message", message: message}, {type: "text"}],
     footer: [
-      {action: "submit", value: "Submit", BSClass: "btn-danger"},
-      {action: "quit", value: "Cancel", BSClass: "btn-warning"}
+      {action: "submit", value: tr.btn("valid"), BSClass: "btn-danger"},
+      {action: "quit", value: tr.btn("cancel"), BSClass: "btn-warning"}
     ],
     display: {maxWidth: maxWidth}
   }, callback);
 }
 
-export function choose(title="Choix", message, name, radioButtons, callback) {
+export function choose(title = tr.title("choice"), message, name, radioButtons, callback) {
   new modal({
     title: title,
     fields: [
@@ -1456,8 +1587,8 @@ export function choose(title="Choix", message, name, radioButtons, callback) {
       {type: "choice", name: name, radioButtons: radioButtons}
     ],
     footer: [
-      {action: "submit", value: "Valider", BSClass: "btn-success"},
-      {action: "quit", value: "Annuler", BSClass: "btn-warning"}
+      {action: "submit", value: tr.btn("valid"), BSClass: "btn-success"},
+      {action: "quit", value: tr.btn("cancel"), BSClass: "btn-warning"}
     ]
   }, callback);
 }
