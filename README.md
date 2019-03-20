@@ -27,7 +27,7 @@
 * (soon) selection tool
 * (soon) theming
 ### Why is dGUI a powerful tool ?
-* You write a **few lines**, you get the **equivalent of hundreds lines** of HTML, javascript and CSS code.
+* You write a **few lines**, you get the **equivalent of hundreds of lines** of HTML, javascript and CSS code.
 * The generated code stays cached only as long as your interface need it.
 * Managing server requests can sometimes be very tricky. dGUI makes **data control and errors handling easier**, leaving you free to process your data and logic at different scales : initialization (conditional fields), formPannel submission, MDI section submission... 
 * You can **easily lay out the content** according to which parameters are important in your UI. For instance, you might want to adjust the fields's size only depending on the container's width, or maybe have three fields of same size horizontaly layered (all you have to do is putting them in an array, as described in a further example thereafter).
@@ -156,17 +156,17 @@ html_element.addEventListener("contextmenu", (e) => {
 * At the moment, a field can be of the following types : **message**, **button**, **text**, **quantity**, **choice**, **switch**, **select**, **date**.
 * If type attribut is not specified, text is set by default.
 
-#### Common attributs
+#### Common attributs to describe fields
 * **key** (string) : refers the field to access it during submission step
 * **label** (string) : text displayed on or above the field input
 * **initValue** (string, boolean, number) : the value to be displayed at init
 * **size** (number) : specifies the field's width
 * **condition** (boolean | {key: string, value: any}) : if true (external variable or function) or equals value of field associated (key), displays the field at init.
 
-#### select
+#### Select field specific attribut
 * **list** (Array<string>) : The options of a HTML select element. By default, the value of the field is set to the index in the list array.
 
-#### date
+#### Date field specific attribut
 * **format** (string) : specifies the date format for the field generation. For instance it can takes "YYYY.MM.DD", "dd.mm.yyyy" or "DD:MM:YY"... At submission, date field will return  a **ISO-8601** formatted string.
 
 ### 3.2 Contextual menus
@@ -180,10 +180,15 @@ html_element.addEventListener("contextmenu", (e) => {
 * **key** (string) : refers the field to access it during submission step
 * **label** (string) : text displayed on the field
 * **condition** (boolean) : if true (external variable or function), displays the field at init.
-* **action** (Function) : triggered by the a click on the field.
-* elm (HTMLDivElement)
 
-#### Switch field attributs
+#### Switch field specific attributs
 * **initValue** (boolean)
+* **action** (Function) : triggered by a click on the field
 * **switchLock** (boolean) : specifies if a click on a switch keeps the contextmenu opened or not
 * **group** (string) : if two or more switches belong to the same group, the last one to be switched on causes the others to be switched off
+
+#### Button field specific attribut
+* **action** (Function) : triggered by a click on the field
+
+#### Context field specific attribut
+* **contextMenu** (contextMenu_description_obj)
