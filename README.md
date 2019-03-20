@@ -3,6 +3,8 @@
 [1. Overview](#1)
 <br>
 [2. Code examples](#2)
+<br>
+[3. API documentation](#3)
 
 ## <a name="1"></a> 1. Overview
 ### Use cases
@@ -148,3 +150,15 @@ html_element.addEventListener("contextmenu", (e) => {
 });
 ```
 ![alt "contextmenus"](examples/contextMenu.png)
+## <a name="3"></a> 3. API documentation
+### 3.1 Fields
+At the moment, a field can be of the following types : message, button, text, quantity, choice, switch, select, date.
+<br>
+#### Common attributs to describe all types of fields
+* key (string) : refer the field to access it during submission step
+* label (string) : text displayed on or above the field input
+* initValue (string, boolean, number) : the value to display at init.
+* value (string, boolean, number)
+* size (number) : specifies the field's width
+* condition (boolean | {key: string, value: any}) : if true (external variable or function) or equals value of field associated (key), allow the field to be displayed
+* input_elm (HTMLElement)
