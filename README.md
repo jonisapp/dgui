@@ -60,7 +60,7 @@ dgui.modalForm({
         {key: "firstname", label: "Firstname"},
         {key: "name", label: "Name"},
         {key: "hobby", label: "Hobby"},
-        [{type: "quantity", key: "quantity", size: 1},
+        [{type: "number", key: "quantity", size: 1},
         {key: "pet", size: 2}]
       ]},
       {key: "kitchen", label: "Kitchen"},
@@ -86,7 +86,7 @@ dgui.modalForm({
         {key: "name", label: "Name"},
         {key: "hobby", label: "Hobby"},
         /* By embedding fields in arrays, you can layer them horizontally*/
-        [{type: "quantity", key: "quantity", size: 1},
+        [{type: "number", key: "quantity", size: 1},
         /* label attribut is optional */
         /* size attribut sets field's width proportionnaly (ratio 2/3) */
         {key: "pet", size: 2}]
@@ -155,22 +155,33 @@ html_element.addEventListener("contextmenu", (e) => {
 ```
 ![alt "contextmenus"](examples/contextMenu.png)
 ## <a name="3"></a> 3. API documentation
+At the moment, the documentation is far to be complete. For more informations, you can refer to the code which I hope is sufficiently readable.
 ### <a name="3_1"></a> 3.1 Fields
-* At the moment, a field can be of the following types : **message**, **button**, **text**, **quantity**, **choice**, **switch**, **select**, **date**.
+* For now, a field can be of the following types : **message**, **button**, **text**, **number**, **choice**, **switch**, **select**, **date**.
 * If type attribut is not specified, text is set by default.
 
 #### Common attributs to describe fields
+* **type** (string)
 * **key** (string) : refers the field to access it during submission step
 * **label** (string) : text displayed on or above the field input
 * **initValue** (string, boolean, number) : the value to be displayed at init
 * **size** (number) : specifies the field's width
 * **condition** (boolean | {key: string, value: any}) : if true (external variable or function) or equals value of field associated (key), displays the field at init.
+* **htmlAttr** (object>) : Standard **HTML attributs**. Has to be given as an objet ({attr1: val1, att2: val2, ...}) Doesn't apply on types switch and choice
+* **cssAttr** (object) : Standard **CSS attributs**. Has to be given as an objet ({attr1: val1, att2: val2, ...})
 
 #### Select field specific attribut
 * **list** (Array<string>) : The options of a HTML select element. By default, the value of the field is set to the index in the list array.
 
 #### Date field specific attribut
 * **format** (string) : specifies the date format for the field generation. For instance it can takes "YYYY.MM.DD", "dd.mm.yyyy" or "DD:MM:YY"... At submission, date field will return  a **ISO-8601** formatted string.
+
+#### Field condition
+A field which has a **condition attribut** will be displayed only if the condition is satisfied. This applies at init but is also reactive to users inputs. The condition value can be either a **boolean** or a **condition_descriptor**. Finally, it can also take an **array of condition_descriptor**, which consists in an object structured as follows :
+* **key** (string) : the key of the field on which the condition will be tested
+* **value** (any) : the value to be tested
+* **operator** (string) : it accepts the following values : "==" | "!=" | "<" | ">" | "<=" | ">=";
+* **action** (string)
 
 ### <a name="3_2"></a> 3.2 Contextual menus
 * A contextmenu can be triggered from **right click** or can be used as a **dropdown menu** by triggering it from a normal click event.

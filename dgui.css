@@ -19,6 +19,12 @@
 		src: url('./fonts/Roboto-Bold.ttf');
 }
 
+.dgui-vertical-layout {
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+}
+
 .dgui-form-pannel-layout {
 	display: flex;
 	flex: 1;

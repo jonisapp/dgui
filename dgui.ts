@@ -45,6 +45,16 @@ export function elementBelongsToDataType(element: any, dataType: string) {
   return false;
 }
 
+export function splitWhereOneOfSeperators(str: string, separators: Array<string>) {
+  console.log(str);
+  let i = 0, str_arr = [];
+  do {
+    str_arr = str.split(separators[i]); ++i;
+  }
+  while(str_arr.length == 1);
+  return str_arr;
+}
+
 export function disableDefaultContextmenu(elm: any) {
   elm.addEventListener("contextmenu", (e) => {
     e.preventDefault();
@@ -326,6 +336,23 @@ class Button {
 
 /* --------------------------------- Interfaces Field --------------------------------------------------*/
 
+interface field_descriptor {
+  type: "message" | "button" | "text" | "number" | "choice" | "switch" | "select" | "date";
+  key: string;
+  label: string;
+  submit: boolean;
+  initValue: string | boolean | number | Array<string> | Array<number> | Array<boolean>;
+  size: number;
+  action: any;
+  condition: boolean | field_condition;
+  BSClass: string;
+  htmlAttr: {};                                                  // standard HTML attributs
+  cssAttr: {};                                                   // standard CSS attributs
+  list: Array<string> | Array<Object>;                           // for type select
+  group: string;                                                 // for type switch
+  radioButtons: Array<field_radioButton>;                        // for type choice
+}
+
 interface field_radioButton {
   // user
   label: string;
@@ -337,7 +364,7 @@ interface field_radioButton {
 
 interface field_condition {
   key: string;
-  value: string | number | Array<string> | Array<number>;
+  value: string | number | Array<string> | Array<number>;        // If field of key [key] has value [value], display the field
 }
 
 /* --------------------------------- CLASS Field -------------------------------------------------------*/
@@ -346,7 +373,7 @@ class Field {
 
   /*                                              - Définition -                                        */
   // user
-  type: "message" | "button" | "text" | "quantity" | "choice" | "switch" | "select" | "date";
+  type: "message" | "button" | "text" | "number" | "choice" | "switch" | "select" | "date";
   key: string;
   name: string;
   label: string;
@@ -369,11 +396,12 @@ class Field {
   elm: any;
   switched: boolean;
   // user & controller
+  operator: string;
   initValue: string | boolean | number;
   radioButtons: Array<field_radioButton>;
 
   /*                                              - Constructor -                                       */
-  constructor(field, parent?: FormPannel) {
+  constructor(field: field_descriptor, parent?: FormPannel) {
     var that = this;
     for(let attribut in field) {
       this[attribut] = field[attribut];
@@ -433,56 +461,8 @@ class Field {
         this.button_elm.textContent = this.label;
         this.button_elm.addEventListener("click", that.action); break;
       case "date":
-        if(!field.format) {field.format = "YYYY.MM.AA"}
-        let format_arr = field.format.split(".");
-        this.input_elm = document.createElement("input"); this.input_elm.setAttribute("type", "hidden");
-        this.date_inputs_elm = []; this.date_labels_elm = []; this.date_units = [];
-        format_arr.forEach((unit: string) => {
-          let input = document.createElement("input");
-          input.type = "number"; input.min = "1"; input.setAttribute("class", "form form-control");
-          console.log(unit);
-          input.setAttribute("placeholder", tr.plcldr(unit.toUpperCase()));
-          if(!that.label) { var label = document.createElement("label") };
-          let label_str = "";
-          var today = new Date();
-          switch(unit) {
-            case "YYYY": case "YY": case "yyyy": case "yy":
-              if(unit == "YYYY" || unit == "yyyy") {
-                input.min = today.getFullYear().toString();
-                input.value = (field.initValue) ? field.initValue : input.min;
-              }
-              else if(unit == "YY" || unit == "yy") {
-                input.value = (field.initValue) ? field.initValue : input.value.substr(2, 2)
-                input.min = input.value;
-              }
-              label_str = tr.lbl("year"); break;
-            case "MM": case "mm":
-              input.max = "12";
-              label_str = tr.lbl("month"); break;
-            case "DD": case "dd":
-              input.max = "32";
-              label_str = tr.lbl("day"); break;
-          }
-          if(!that.label) { label.textContent = label_str; }
-          input.setAttribute("data-type", unit);
-          input.addEventListener("input", () => {
-            let date_comps = {y: null, m: null, d: null}; let indexes = [];
-            that.date_inputs_elm.forEach((elm, i) => {
-              if(elm.value.length == 1) { elm.value = "0" + elm.value; }
-              if(elm.dataset.type == "DD" || elm.dataset.type == "dd") { date_comps.d = i; }
-              else if(elm.dataset.type == "MM" || elm.dataset.type == "mm") { date_comps.m = i; }
-              else { date_comps.y = i; }
-            });
-            let dIElm = that.date_inputs_elm;
-            let y_value = (dIElm[date_comps.y].value.length == 4) ? dIElm[date_comps.y].value : "20"+dIElm[date_comps.y].value;
-            that.input_elm.value = y_value + "-" + dIElm[date_comps.m].value + "-" + dIElm[date_comps.d].value;
-          });
-          this.date_units.push(unit);
-          if(this.label) { this.date_labels_elm.push(label); }
-          this.date_inputs_elm.push(input);
-        });
-        break;
-      case "text": case "password": case "quantity":
+        this.generateDateField(field); break;
+      case "text": case "password": case "number":
         if(field.label) {
           this.label_elm = document.createElement("label");
           this.label_elm.textContent = field.label;
@@ -538,7 +518,9 @@ class Field {
           });
         } break;
     }
-    if(field.type == "quantity") {
+    if(field.htmlAttr) { this.setHtmlAttributs(field.htmlAttr); }
+    if(field.cssAttr) { this.setCSSAttributs(field.cssAttr); }
+    if(field.type == "number") {
       this.input_elm.setAttribute("type", "number");
       this.input_elm.setAttribute("step", "1");
       this.input_elm.setAttribute("min", "0");
@@ -555,8 +537,7 @@ class Field {
       this.elm.setAttribute("class", "dgui-form-pannel-element");
     }
     else if(field.type == "date") {
-      console.log("coucou");
-      this.elm.setAttribute("class", "dgui-form-pannel-layout");
+      this.elm.setAttribute("class", (this.label) ? "dgui-vertical-layout" : "dgui-form-pannel-layout");
     }
     else {
       this.elm.setAttribute("class", "dgui-form-pannel-element-message");
@@ -584,13 +565,14 @@ class Field {
     else if(this.type == "button") {
       this.elm.appendChild(this.button_elm);
     }
-    else if(field.type == "text" || field.type == "password" || field.type == "select" || field.type == "quantity") {
+    else if(field.type == "text" || field.type == "password" || field.type == "select" || field.type == "number") {
       if(field.label) {
         this.elm.appendChild(this.label_elm);
       }
       this.elm.appendChild(this.input_elm);
     }
     else if(field.type == "date") {
+      let hLayout_elm = document.createElement("div"); hLayout_elm.setAttribute("class", "dgui-form-pannel-layout");
       for(let i = 0; i < this.date_inputs_elm.length; ++i) {
         let date_layer = document.createElement("div");
         date_layer.setAttribute("class", "dgui-form-pannel-element");
@@ -598,8 +580,10 @@ class Field {
         date_layer.style.flex = (this.date_units[i] == "YYYY") ? "2" : "1";
         if(!field.label) { date_layer.appendChild(this.date_labels_elm[i]); }
         date_layer.appendChild(this.date_inputs_elm[i]);
-        this.elm.appendChild(date_layer);
+        if(!this.label) { this.elm.appendChild(date_layer); }
+        else { hLayout_elm.appendChild(date_layer) }
       }
+      if(this.label) { this.elm.appendChild(this.label_elm); this.elm.appendChild(hLayout_elm); }
       this.elm.style.paddingLeft = "15px"; this.elm.style.paddingRight = "15px";
     }
     else {
@@ -607,12 +591,88 @@ class Field {
     }
   }
 
-  check_condition(targetField) {
+  check_condition(targetField, operator) {
     if(Array.isArray(this.condition.value)) {
       this.elm.style.display = (this.condition.value.includes(targetField.value)) ? "block" : "none";
     }
     else {
-      this.elm.style.display = (this.condition.value == targetField.value) ? "block" : "none";
+      this.elm.style.display = (eval(this.condition.value + operator + targetField.value)) ? "block" : "none";
+    }
+  }
+
+  generateDateField(field) {
+    if(!field.format) {field.format = "YYYY.MM.AA"}
+    let date = new Date(field.initValue);
+    this.initValue = (date) ? field.initValue : "";
+    var initYearValue = date.getFullYear().toString();
+    let initMonthValue = (date.getMonth()+1).toString(); initMonthValue = (initMonthValue.length == 2) ? (initMonthValue) : ("0" + initMonthValue);
+    let initDayValue = date.getDate().toString(); initDayValue = (initDayValue.length == 2) ? initDayValue : ("0" + initDayValue);
+    this.initValue = initYearValue + "-" + initMonthValue + "-" + initDayValue;
+    let format_arr = splitWhereOneOfSeperators(field.format, ["-",".",":"," ", ","]);
+    this.input_elm = document.createElement("input"); this.input_elm.setAttribute("type", "hidden");
+    this.input_elm.value = this.initValue;
+    if(field.label) {
+      this.label_elm = document.createElement("label"); this.label_elm.textContent = field.label;
+      this.label_elm.setAttribute("style", "width: 100%; margin-bottom: 0px; margin-left: 5px; margin-top: 10px");
+    }
+    this.date_inputs_elm = []; this.date_labels_elm = []; this.date_units = [];
+    format_arr.forEach((unit: string) => {
+      let input = document.createElement("input");
+      input.type = "number"; input.min = "1"; input.setAttribute("class", "form form-control");
+      unit = unit.toUpperCase();
+      input.setAttribute("placeholder", tr.plcldr(unit));
+      if(!this.label) { var label = document.createElement("label") };
+      let label_str = "";
+      var today = new Date();
+      switch(unit) {
+        case "YYYY": case "YY":
+          if(unit == "YYYY") {
+            input.value = initYearValue; input.min = today.getFullYear().toString();
+          }
+          else if(unit == "YY") {
+            input.value = initYearValue.substr(2,2); input.min = input.value;
+          }
+          label_str = tr.lbl("year"); break;
+        case "MM":
+          input.value = initMonthValue; input.max = "12";
+          label_str = tr.lbl("month"); break;
+        case "DD":
+          input.value = initDayValue; input.max = "32";
+          label_str = tr.lbl("day"); break;
+      }
+      if(!this.label) { label.textContent = label_str; }
+      input.setAttribute("data-type", unit);
+      input.addEventListener("input", () => {
+        let date_comps = {y: null, m: null, d: null}; let indexes = [];
+        this.date_inputs_elm.forEach((elm, i) => {
+          if(elm.value.length == 1) { elm.value = "0" + elm.value; }
+          if(elm.dataset.type == "DD" || elm.dataset.type == "dd") { date_comps.d = i; }
+          else if(elm.dataset.type == "MM" || elm.dataset.type == "mm") { date_comps.m = i; }
+          else { date_comps.y = i; }
+        });
+        let dIElm = this.date_inputs_elm;
+        let y_value = (dIElm[date_comps.y].value.length == 4) ? dIElm[date_comps.y].value : "20"+dIElm[date_comps.y].value;
+        this.input_elm.value = y_value + "-" + dIElm[date_comps.m].value + "-" + dIElm[date_comps.d].value;
+      });
+      this.date_units.push(unit);
+      if(this.label) { this.date_labels_elm.push(label); }
+      this.date_inputs_elm.push(input);
+    });
+  }
+
+  setHtmlAttributs(attributs: Array<{}>) {
+    if(this.type != "switch" && this.type != "choice") {
+      for(let attribut in attributs) {
+        this.input_elm.setAttribute(attribut, attributs[attribut]);
+      }
+    }
+  }
+
+  setCSSAttributs(attributs: Array<{}>) {
+    if(this.type != "switch" && this.type != "choice") {
+      for(let attribut in attributs) {
+        this.input_elm.style[attribut] = attributs[attribut];
+      }
     }
   }
      
@@ -939,7 +999,9 @@ class FormPannel {
             formPannelLayout.style.paddingRight = 15+"px";
           }
           var fields_inputs = [];
+          var label_count = 0;
           field_s_descriptor.forEach(function(field) {
+            if(field.label) { ++label_count; }
             field = that.generateField(fieldsContainer, field);
             // Groups
             if(field.group) {
@@ -968,6 +1030,10 @@ class FormPannel {
             }
             formPannelLayout.appendChild(field.elm);
           });
+          // unique label for horizontally layered fields
+          if(label_count == 1) {
+            field_s_descriptor
+          }
           // Set field max attribut
           for(let i = 0; i < fields_inputs.length; ++i) {
             if(fields_inputs[i].max) {
@@ -1017,9 +1083,9 @@ class FormPannel {
     this.conditionalFields.forEach((conditionnalField) => {
       this.fields.forEach((field) => {
         if(field.key == conditionnalField.condition.key) {
-          conditionnalField.check_condition(field.input_elm);
+          conditionnalField.check_condition(field.input_elm, (field.operator) ? field.operator : "==");
           field.input_elm.addEventListener("input", (e) => {
-            conditionnalField.check_condition(e.currentTarget);
+            conditionnalField.check_condition(e.currentTarget, (field.operator) ? field.operator : "=="));
           });
         }
       });
@@ -1181,14 +1247,14 @@ class FormPannel {
 
   submitField(field, values) {
     let initValue = (typeof field.initValue !== "undefined") ? field.initValue : "";
-    if(field.type == "text" || field.type == "password" || field.type == "quantity" || field.type == "select" || field.type == "date") {
+    if(field.type == "text" || field.type == "password" || field.type == "number" || field.type == "select" || field.type == "date") {
       // On ne soumet que les champs dont la valeur a été modifiée
       if(field.input_elm.value != initValue || field.submit === true) {
         // Si le champs possède un attribut key il sera renvoyé sous forme d'objet (key: value)
         if(typeof field.key !== "undefined") {
           let objTextField = {};
           objTextField[field.key] = field.input_elm.value;
-          if(field.type == "select" || field.type == "quantity") {
+          if(field.type == "select" || field.type == "number") {
             objTextField[field.key] = parseInt(field.input_elm.value);
           }
           values.push(objTextField);
