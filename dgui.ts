@@ -90,6 +90,12 @@ var translations = {
     year: {en: "Year", fr: "Année"},
     month: {en: "Month", fr: "Mois"},
     day: {en: "Day", fr: "Jour"}
+  },
+  placeholders: {
+    YYYY: {en: "YYYY", fr: "AAAA"},
+    YY: {en: "YY", fr: "AA"},
+    MM: {en: "MM", fr: "MM"},
+    DD: {en: "DD", fr: "JJ"}
   }
 };
 
@@ -107,6 +113,9 @@ var tr = {
   },
   lbl: (value: string) => {
     return translations.labels[value][language];
+  },
+  plcldr: (value: string) => {
+    return translations.placeholders[value][language];
   }
 }
 
@@ -137,17 +146,17 @@ class ColorSet {
   constructor(color1: string, color2?: string, color3?: string) {
     this.arr_baseIntensity = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "a", "b", "c", "d", "e", "f"];
     this.prmColor = color1;
-    // this.secColor = (color2) ? color2 : this.algo1(color1, 15);
-    // this.secBrdColor = this.algo1(this.secColor, 30);
-    // this.thrColor = (color3) ? color3 : this.algo1(this.secColor, 25);
-    // this.thrBrdColor = this.algo1(this.thrColor, 50);
-    // this.fontColor = this.algo1(this.thrColor, 80);
-    this.secColor = (color2) ? color2 : this.algo1(color1, 50);
-    this.secBrdColor = this.algo1(this.secColor, 80);
-    this.thrColor = (color3) ? color3 : this.algo1(this.secColor, 15);
-    this.thrBrdColor = this.algo1(this.thrColor, 150);
-    this.fontColor = this.algo1(this.thrColor, 200);
-    console.log(this.fontColor);
+    this.secColor = (color2) ? color2 : this.algo0(color1, 15);
+    this.secBrdColor = this.algo0(this.secColor, 30);
+    this.thrColor = (color3) ? color3 : this.algo0(this.secColor, 25);
+    this.thrBrdColor = this.algo0(this.thrColor, 50);
+    this.fontColor = this.algo0(this.thrColor, 80);
+    // this.secColor = (color2) ? color2 : this.algo1(color1, 50);
+    // this.secBrdColor = this.algo1(this.secColor, 80);
+    // this.thrColor = (color3) ? color3 : this.algo1(this.secColor, 15);
+    // this.thrBrdColor = this.algo1(this.thrColor, 150);
+    // this.fontColor = this.algo1(this.thrColor, 200);
+    // console.log(this.fontColor);
   }
 
   algo0(hexa_color: string, diff: number) {
@@ -422,7 +431,7 @@ class Field {
         this.button_elm = document.createElement("button");
         this.button_elm.setAttribute("class", this.BSClass);
         this.button_elm.textContent = this.label;
-        this.button_elm.addEventListener("click", that.action);
+        this.button_elm.addEventListener("click", that.action); break;
       case "date":
         if(!field.format) {field.format = "YYYY.MM.AA"}
         let format_arr = field.format.split(".");
@@ -431,21 +440,30 @@ class Field {
         format_arr.forEach((unit: string) => {
           let input = document.createElement("input");
           input.type = "number"; input.min = "1"; input.setAttribute("class", "form form-control");
-          let label = document.createElement("label");
+          console.log(unit);
+          input.setAttribute("placeholder", tr.plcldr(unit.toUpperCase()));
+          if(!that.label) { var label = document.createElement("label") };
+          let label_str = "";
+          var today = new Date();
           switch(unit) {
             case "YYYY": case "YY": case "yyyy": case "yy":
-              input.min = (1970 + Math.round(Date.now() / 31536000000)).toString();
-              if(unit == "YY") {
-                input.min = input.min.substr(2, 2);
+              if(unit == "YYYY" || unit == "yyyy") {
+                input.min = today.getFullYear().toString();
+                input.value = (field.initValue) ? field.initValue : input.min;
               }
-              label.textContent = tr.lbl("year"); break;
+              else if(unit == "YY" || unit == "yy") {
+                input.value = (field.initValue) ? field.initValue : input.value.substr(2, 2)
+                input.min = input.value;
+              }
+              label_str = tr.lbl("year"); break;
             case "MM": case "mm":
               input.max = "12";
-              label.textContent = tr.lbl("month"); break;
+              label_str = tr.lbl("month"); break;
             case "DD": case "dd":
               input.max = "32";
-              label.textContent = tr.lbl("day"); break;
+              label_str = tr.lbl("day"); break;
           }
+          if(!that.label) { label.textContent = label_str; }
           input.setAttribute("data-type", unit);
           input.addEventListener("input", () => {
             let date_comps = {y: null, m: null, d: null}; let indexes = [];
@@ -460,7 +478,7 @@ class Field {
             that.input_elm.value = y_value + "-" + dIElm[date_comps.m].value + "-" + dIElm[date_comps.d].value;
           });
           this.date_units.push(unit);
-          this.date_labels_elm.push(label);
+          if(this.label) { this.date_labels_elm.push(label); }
           this.date_inputs_elm.push(input);
         });
         break;
@@ -577,8 +595,8 @@ class Field {
         let date_layer = document.createElement("div");
         date_layer.setAttribute("class", "dgui-form-pannel-element");
         date_layer.setAttribute("style", "padding-left: 5px; padding-right: 5px; flex: 1;");
-        date_layer.style.flex = (this.date_units[i] == "YYYY") ? "2" : "1"; 
-        date_layer.appendChild(this.date_labels_elm[i]);
+        date_layer.style.flex = (this.date_units[i] == "YYYY") ? "2" : "1";
+        if(!field.label) { date_layer.appendChild(this.date_labels_elm[i]); }
         date_layer.appendChild(this.date_inputs_elm[i]);
         this.elm.appendChild(date_layer);
       }
@@ -861,7 +879,7 @@ class FormPannel {
     formPannelHeader.setAttribute("style", "padding: 7px");
     let formPannelTitle = document.createElement("div");
     setDefaultCursor(formPannelTitle);
-    formPannelTitle.setAttribute("style", "font-size: 18px; font-weight: bold; color: rgba(0, 0, 0, 0.86); color: #BFC6F9");
+    formPannelTitle.setAttribute("style", "font-size: 18px; font-weight: bold; color: rgba(0, 0, 0, 0.86);");
     formPannelTitle.textContent = this.title;
     formPannelHeader.appendChild(formPannelTitle);
     var formPannelBody = document.createElement("div");
@@ -980,7 +998,6 @@ class FormPannel {
 
   generateField(fieldsContainer, field_descriptor) {
     let field = new Field(field_descriptor, this);
-    field.input_elm.style.backgroundColor = this.colorSet.fontColor;
     // conditionnal field
     if(typeof field.condition !== "undefined") {
       if(typeof field.condition === "boolean") {
