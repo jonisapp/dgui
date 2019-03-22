@@ -79,7 +79,10 @@ var translations = {
     entry: {en: "Entry", fr: "Saisie"},
     choice: {en: "Choice", fr: "Choix"},
     confirm: {en: "Confirm", fr: "Confirmation"},
-    serverError: {en: "Server error", fr: "Erreur sur le serveur"}
+    serverError: {en: "Server error", fr: "Erreur sur le serveur"},
+    new: {en: "New", fr: "Ajouter"},
+    edit: {en: "Edit", fr: "Modifier"},
+    remove: {en: "Remove", fr: "Supprimer"}
   },
   buttons: {
     ok: {en: "Ok", fr: "D'accord"},
@@ -603,14 +606,16 @@ class Field {
     }
     else {
       let fulfilled = false;
-      var value1 = (that.input_elm.value) ? that.input_elm.value : "0";
+      var value1 = (this.condition.value) ? this.condition.value : "0";
       var value2 = (targetField.input_elm.value) ? targetField.input_elm.value : "0";
+      console.log(value1); console.log(value2);
       if(operator == "hasChanged") {
         if(targetField.initValue != targetField.value) {
           fulfilled = true;
         }
       }
       else if(eval(value1 + operator + value2)) {
+        console.log("condition remplive");
         fulfilled = true;
       }
       if(fulfilled) {
@@ -891,6 +896,7 @@ class MDI {
 /* --------------------------------- Interfaces FormPannel ---------------------------------------------*/
 
 interface formPannel_options {
+  mode?: "new" | "edit";
   color?: string;
   maxWidth?: number;
   maxHeight?: number;
@@ -915,9 +921,9 @@ interface formPannel_fieldGroup {
 class FormPannel {
   id: string;
   type: string
-  elm: HTMLDivElement;
   parent: modal;
-  title: string;
+  title?: string;
+  rTitle?: string;
   fields: Array<Field>;
   footer: Array<button>;
   options: formPannel_options;
@@ -926,6 +932,7 @@ class FormPannel {
   MDI: MDI;
   footer_elm: HTMLDivElement;
   // controller
+  elm: HTMLDivElement;
   colorSet: ColorSet;
   groups: Array<formPannel_fieldGroup>;
   conditionalFields: Array<Field>; 
@@ -940,6 +947,17 @@ class FormPannel {
 
     if(!this.options) {
       this.options = {};
+    }
+    if(this.rTitle && this.options.mode) {
+      if(this.options.mode == "new") {
+        this.title = tr.title("new") + " " + this.rTitle;
+      }
+      else if(this.options.mode == "edit") {
+        this.title = tr.title("edit") + " " + this.rTitle;
+      }
+      else {
+        this.title = this.rTitle;
+      }
     }
     if(!this.options.shape) {this.options.shape = "rounded";}
     if(!this.options.color) {console.log(this.options);this.options.color = "#D3D3D3";}
@@ -1105,7 +1123,7 @@ class FormPannel {
           field.elm.style.display = "none";
         }
       }
-      else if(field.condition.key && field.condition.value) {
+      else if(field.condition.key) {
         this.conditionalFields.push(field);
       }
     }
