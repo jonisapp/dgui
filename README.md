@@ -180,8 +180,8 @@ At the moment, the documentation is far to be complete. For more informations, y
 A field which has a **condition attribut** will be displayed only if the condition is satisfied. This applies at init but is also reactive to users inputs. The condition value can be either a **boolean** or a **condition_descriptor**. Finally, it can also take an **array of condition_descriptor**, which consists in an object structured as follows :
 * **key** (string) : the key of the field on which the condition will be tested
 * **value** (any) : the value to be tested
-* **operator** (string) : it accepts the following values : "==" | "!=" | "<" | ">" | "<=" | ">=";
-* **action** (string)
+* **operator** (string) : accepts : **"=="** | **"!="** | **"<"** | **">"** | **"<="** | **">="** | **"hasChanged"**. Operator "hasChanged" returns true if current value differs from initValue. If not provided, "==" is set by default.
+* **action** (string | Array<string>) : accepts "show" and "getValue". Is triggered if condition is fulfilled. "getValue" sets the value of the conditionnal field to the value of the targeted one. If action not provided, "show" is set by default. 
 
 ### <a name="3_2"></a> 3.2 Contextual menus
 * A contextmenu can be triggered from **right click** or can be used as a **dropdown menu** by triggering it from a normal click event.

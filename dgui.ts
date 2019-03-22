@@ -71,7 +71,7 @@ export function setDefaultCursor(elm: any) {
   elm.style.cursor = "default";
 }
 
-/* --------------------------------- dGUI configuration  -----------------------------------------------*/
+/* --------------------------------- dGUI translation --------------------------------------------------*/
 
 var translations = {
   titles: {
@@ -365,6 +365,8 @@ interface field_radioButton {
 interface field_condition {
   key: string;
   value: string | number | Array<string> | Array<number>;        // If field of key [key] has value [value], display the field
+  operator: "==" | "!=" | "<" | ">" | "<=" | ">=" | "hasChanged";
+  action: "show" | "getValue";
 }
 
 /* --------------------------------- CLASS Field -------------------------------------------------------*/
@@ -396,7 +398,6 @@ class Field {
   elm: any;
   switched: boolean;
   // user & controller
-  operator: string;
   initValue: string | boolean | number;
   radioButtons: Array<field_radioButton>;
 
@@ -591,17 +592,49 @@ class Field {
     }
   }
 
-  check_condition(targetField, operator) {
+  check_condition(targetField: Field) {
+    var that = this;
+    let operator = (this.condition.operator) ? this.condition.operator : "==";
+    this.condition.action = (this.condition.action) ? this.condition.action : ["show"];
+    this.condition.action = (Array.isArray(this.condition.action)) ? this.condition.action : [this.condition.action];
+    this.condition.value = (this.condition.value) ? this.condition.value : 0;
     if(Array.isArray(this.condition.value)) {
-      this.elm.style.display = (this.condition.value.includes(targetField.value)) ? "block" : "none";
+      this.elm.style.display = (this.condition.value.includes(targetField.input_elm.value)) ? "block" : "none";
     }
     else {
-      this.elm.style.display = (eval(this.condition.value + operator + targetField.value)) ? "block" : "none";
+      let fulfilled = false;
+      var value1 = (that.input_elm.value) ? that.input_elm.value : "0";
+      var value2 = (targetField.input_elm.value) ? targetField.input_elm.value : "0";
+      if(operator == "hasChanged") {
+        if(targetField.initValue != targetField.value) {
+          fulfilled = true;
+        }
+      }
+      else if(eval(value1 + operator + value2)) {
+        fulfilled = true;
+      }
+      if(fulfilled) {
+        if(this.condition.action.includes("show")) { this.elm.style.display = "block"; }
+        if(this.condition.action.includes("getValue")) {
+          if(this.type =! "date" && targetField.type != "date") {
+            this.value = targetField.value
+          }
+          else {
+            for(let i = 0; i < this.date_inputs_elm.length; ++i) {
+              this.date_inputs_elm[i].value = targetField.date_inputs_elm[i].value;
+            }
+          }
+        } 
+      }
+      else {
+        if(this.condition.action.includes("show")) { this.elm.style.display = "none"; }
+      }
     }
   }
 
   generateDateField(field) {
     if(!field.format) {field.format = "YYYY.MM.AA"}
+    this.value = "";
     let date = new Date(field.initValue);
     this.initValue = (date) ? field.initValue : "";
     var initYearValue = date.getFullYear().toString();
@@ -652,7 +685,8 @@ class Field {
         });
         let dIElm = this.date_inputs_elm;
         let y_value = (dIElm[date_comps.y].value.length == 4) ? dIElm[date_comps.y].value : "20"+dIElm[date_comps.y].value;
-        this.input_elm.value = y_value + "-" + dIElm[date_comps.m].value + "-" + dIElm[date_comps.d].value;
+        this.value = y_value + "-" + dIElm[date_comps.m].value + "-" + dIElm[date_comps.d].value;
+        this.input_elm.value = this.value;
       });
       this.date_units.push(unit);
       if(this.label) { this.date_labels_elm.push(label); }
@@ -1083,10 +1117,19 @@ class FormPannel {
     this.conditionalFields.forEach((conditionnalField) => {
       this.fields.forEach((field) => {
         if(field.key == conditionnalField.condition.key) {
-          conditionnalField.check_condition(field.input_elm, (field.operator) ? field.operator : "==");
-          field.input_elm.addEventListener("input", (e) => {
-            conditionnalField.check_condition(e.currentTarget, (field.operator) ? field.operator : "=="));
-          });
+          conditionnalField.check_condition(field);
+          if(field.type != "date") {
+            field.input_elm.addEventListener("input", (e) => {
+              conditionnalField.check_condition(field);
+            });
+          }
+          else {
+            field.date_inputs_elm.forEach((input_elm) => {
+              input_elm.addEventListener("input", (e) => {
+                conditionnalField.check_condition(field);
+              });
+            });
+          }
         }
       });
     });
