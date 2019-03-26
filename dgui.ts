@@ -181,12 +181,6 @@ class ColorSet {
     this.thrColor = (color3) ? color3 : this.algo0(this.secColor, 25);
     this.thrBrdColor = this.algo0(this.thrColor, 50);
     this.fontColor = this.algo0(this.thrColor, 80);
-    // this.secColor = (color2) ? color2 : this.algo1(color1, 50);
-    // this.secBrdColor = this.algo1(this.secColor, 80);
-    // this.thrColor = (color3) ? color3 : this.algo1(this.secColor, 15);
-    // this.thrBrdColor = this.algo1(this.thrColor, 150);
-    // this.fontColor = this.algo1(this.thrColor, 200);
-    // console.log(this.fontColor);
   }
 
   algo0(hexa_color: string, diff: number) {
@@ -353,10 +347,10 @@ class Button {
 /* --------------------------------- Interfaces Field --------------------------------------------------*/
 
 interface field_descriptor {
-  type: "message" | "button" | "text" | "number" | "choice" | "switch" | "select" | "date";
+  type: "message" | "button" | "text" | "number" | "choice" | "switch" | "switchGroup" | "select" | "date";
   key: string;
   label: string;
-  submit: boolean;
+  required: boolean;
   initValue: string | boolean | number | Array<string> | Array<number> | Array<boolean>;
   size: number;
   action: any;
@@ -391,11 +385,11 @@ class Field {
 
   /*                                              - Définition -                                        */
   // user
-  type: "message" | "button" | "text" | "number" | "choice" | "switch" | "select" | "date";
+  type: "message" | "button" | "text" | "number" | "choice" | "switch" | "switchGroup" | "select" | "date";
   key: string;
   name: string;
   label: string;
-  submit: boolean;
+  required: boolean;
   value: string | boolean | number;
   size: number;
   list: Array<string> | Array<Object>;
@@ -407,11 +401,11 @@ class Field {
   parent?: FormPannel;
   conditionalFields: Array<Field>;
   input_elm: any;
-  date_inputs_elm?: Array<HTMLInputElement>;
-  date_labels_elm?: Array<HTMLLabelElement>;
+  label_elm: HTMLLabelElement;
+  inputs_elm?: Array<HTMLDivElement> | Array<HTMLInputElement>;
+  labels_elm?: Array<HTMLLabelElement>;
   date_units: Array<string>;
   button_elm: HTMLButtonElement;
-  label_elm: HTMLLabelElement;
   elm: any;
   switched: boolean;
   // user & controller
@@ -437,43 +431,62 @@ class Field {
     this.conditionalFields = [];
     /*                                            - init according to type -                            */
     switch(field.type) {
+      case "switchGroup":
+        this.required = true;
+        this.inputs_elm = [];
+        this.initValue = (this.initValue) ? this.initValue : 0;
+        this.value = this.initValue;
+        field.list.forEach((switchLabel, i) => {
+          let input_elm = document.createElement("div");
+          input_elm.setAttribute("data-value", i);
+          that.generateSwitch(input_elm, switchLabel);
+          that.inputs_elm.push(input_elm);
+        });
+        this.inputs_elm[this.initValue].setAttribute("class", "invoice-leftMenu-button-selected");
+        this.inputs_elm.forEach((input_elm, i) => {
+          input_elm.addEventListener("click", (e) => {
+            that.inputs_elm.forEach((ie) => {
+              ie.setAttribute("class", "invoice-leftMenu-button");
+            });
+            e.currentTarget.setAttribute("class", "invoice-leftMenu-button-selected");
+            that.value = e.currentTarget.dataset.value;
+            console.log(that.value);
+          });
+        });
+        break;
       case "switch":
-      this.input_elm = document.createElement("div");
-      this.input_elm.setAttribute("class", "invoice-leftMenu-button");
-      this.input_elm.setAttribute("style", "display: flex; justify-content: center; align-items: center");
-      let text_elm = document.createElement("div");
-      text_elm.textContent = this.label;
-      this.input_elm.appendChild(text_elm);
-      this.input_elm.setAttribute("class", (this.initValue) ? "invoice-leftMenu-button-selected" : "invoice-leftMenu-button");
-      this.value = this.initValue;
-      this.input_elm.addEventListener("click", (e) => {
-        let elm = e.currentTarget;
-        if(!that.value) {
-          if(that.parent && that.group) {
-            that.parent.groups.forEach((group) => {
-              if(group.name == that.group) {
-                group.fields.forEach((field) => {
-                  field.value = false;
-                  field.conditionalFields.forEach((cf) => {
-                    cf.check_condition(field);
+        this.input_elm = document.createElement("div");
+        this.generateSwitch(this.input_elm, this.label);
+        this.input_elm.setAttribute("class", (this.initValue) ? "invoice-leftMenu-button-selected" : "invoice-leftMenu-button");
+        this.value = this.initValue;
+        this.input_elm.addEventListener("click", (e) => {
+          let elm = e.currentTarget;
+          if(!that.value) {
+            if(that.parent && that.group) {
+              that.parent.groups.forEach((group) => {
+                if(group.name == that.group) {
+                  group.fields.forEach((field) => {
+                    field.value = false;
+                    field.conditionalFields.forEach((cf) => {
+                      cf.check_condition(field);
+                    });
+                    field.input_elm.setAttribute("class", "invoice-leftMenu-button");
                   });
-                  field.input_elm.setAttribute("class", "invoice-leftMenu-button");
-                });
-              }
+                }
+              });
+            }
+            elm.setAttribute("class", "invoice-leftMenu-button-selected");
+            that.value = true;
+            that.conditionalFields.forEach((cf) => {
+              cf.check_condition(that);
             });
           }
-          elm.setAttribute("class", "invoice-leftMenu-button-selected");
-          that.value = true;
-          that.conditionalFields.forEach((cf) => {
-            cf.check_condition(that);
-          });
-        }
-        else {
-          elm.setAttribute("class", "invoice-leftMenu-button");
-          that.value = false;
-        }
-      });
-      break;
+          else {
+            elm.setAttribute("class", "invoice-leftMenu-button");
+            that.value = false;
+          }
+        });
+        break;
       case "message":
         this.input_elm = document.createElement("div");
         setDefaultCursor(this.input_elm);
@@ -486,13 +499,10 @@ class Field {
         this.button_elm.textContent = this.label;
         this.button_elm.addEventListener("click", that.action); break;
       case "date":
+        this.required = true;
         this.generateDateField(field); break;
       case "text": case "password": case "number":
-        if(field.label) {
-          this.label_elm = document.createElement("label");
-          this.label_elm.textContent = field.label;
-          this.label_elm.setAttribute("style", "text-align: left");
-        }
+        this.initLabel(field);
         this.input_elm = document.createElement("input");
         this.input_elm.setAttribute("type", field.type);
         this.input_elm.setAttribute("class", "form form-control");
@@ -508,11 +518,7 @@ class Field {
         }
         break;
       case "select":
-      if(field.label) {
-          this.label_elm = document.createElement("label");
-          this.label_elm.textContent = field.label;
-          this.label_elm.setAttribute("style", "text-align: left");
-        }
+        this.initLabel(field);
         if(this.list) {
           this.input_elm = document.createElement("select");
           this.input_elm.setAttribute("class", "form form-control");
@@ -525,8 +531,7 @@ class Field {
           this.input_elm.addEventListener("input", (e) => {
             that.value = e.currentTarget.value;
           });
-        }
-        break;
+        } break;
       case "choice":
         if(typeof this.radioButtons !== "undefined") {
           this.radioButtons.map(function(radioButton, index) {
@@ -553,13 +558,17 @@ class Field {
         this.input_elm.value = "1";
       }
     }
-    if(typeof field.initValue !== "undefined") {
+    if(typeof field.initValue !== "undefined" && field.type != "switchGroup") {
       this.input_elm.value = this.initValue;
     }
     /*                                            - init display -                                      */
     this.elm = document.createElement("div");
-    if(field.type != "message" && field.type != "date") {
+    if(!["message", "date", "switchGroup"].includes(field.type)) {
       this.elm.setAttribute("class", "dgui-form-pannel-element");
+    }
+    else if(field.type == "switchGroup") {
+      this.elm.setAttribute("class", (this.label) ? "dgui-vertical-layout" : "dgui-form-pannel-layout");
+      this.elm.setAttribute("style", "padding-left: 15px; padding-right: 15px;");
     }
     else if(field.type == "date") {
       this.elm.setAttribute("class", (this.label) ? "dgui-vertical-layout" : "dgui-form-pannel-layout");
@@ -587,7 +596,7 @@ class Field {
         that.elm.appendChild(radioAndLabel);
       });
     }
-    else if(this.type == "button") {
+    else if(field.type == "button") {
       this.elm.appendChild(this.button_elm);
     }
     else if(field.type == "text" || field.type == "password" || field.type == "select" || field.type == "number") {
@@ -598,22 +607,50 @@ class Field {
     }
     else if(field.type == "date") {
       let hLayout_elm = document.createElement("div"); hLayout_elm.setAttribute("class", "dgui-form-pannel-layout");
-      for(let i = 0; i < this.date_inputs_elm.length; ++i) {
+      for(let i = 0; i < this.inputs_elm.length; ++i) {
         let date_layer = document.createElement("div");
         date_layer.setAttribute("class", "dgui-form-pannel-element");
         date_layer.setAttribute("style", "padding-left: 5px; padding-right: 5px; flex: 1;");
         date_layer.style.flex = (this.date_units[i] == "YYYY") ? "2" : "1";
-        if(!field.label) { date_layer.appendChild(this.date_labels_elm[i]); }
-        date_layer.appendChild(this.date_inputs_elm[i]);
+        if(!field.label) { date_layer.appendChild(this.labels_elm[i]); }
+        date_layer.appendChild(this.inputs_elm[i]);
         if(!this.label) { this.elm.appendChild(date_layer); }
         else { hLayout_elm.appendChild(date_layer) }
       }
       if(this.label) { this.elm.appendChild(this.label_elm); this.elm.appendChild(hLayout_elm); }
       this.elm.style.paddingLeft = "15px"; this.elm.style.paddingRight = "15px";
     }
+    else if(field.type == "switchGroup") {
+      let hLayout_elm = document.createElement("div"); hLayout_elm.setAttribute("class", "dgui-form-pannel-layout");
+      this.inputs_elm.forEach((input_elm) => {
+        let elm = document.createElement("div");
+        elm.setAttribute("class", "dgui-form-pannel-element");
+        elm.setAttribute("style", "flex: 1; padding-left: 5px; padding-right: 5px");
+        elm.appendChild(input_elm);
+        hLayout_elm.appendChild(elm);
+      });
+      if(this.label) { let label_elm = document.createElement("label"); label_elm.textContent = this.label; label_elm.setAttribute("style", "margin-bottom: 0px; margin-top: 10px; margin-left: 5px;"); this.elm.appendChild(label_elm); }
+      this.elm.appendChild(hLayout_elm);
+    }
     else {
       this.elm.appendChild(this.input_elm);
     }
+  }
+
+  initLabel(field) {
+    if(field.label) {
+      this.label_elm = document.createElement("label");
+      this.label_elm.textContent = field.label;
+      this.label_elm.setAttribute("style", "text-align: left");
+    }
+  }
+
+  generateSwitch(input_elm, label) {
+    input_elm.setAttribute("class", "invoice-leftMenu-button");
+    input_elm.setAttribute("style", "display: flex; justify-content: center; align-items: center; margin-top: 0px");
+    let text_elm = document.createElement("div");
+    text_elm.textContent = label;
+    input_elm.appendChild(text_elm);
   }
 
   check_condition(targetField: Field) {
@@ -629,8 +666,9 @@ class Field {
       let fulfilled = false;
       var value1 = (this.condition.hasValue) ? this.condition.hasValue : "0";
       var value2 = (targetField.value) ? targetField.value : "0";
+      console.log(targetField);
       if(operator == "hasChanged") {
-        if(targetField.type == "switch" && targetField.initValue != targetField.value) {
+        if((targetField.type == "switch" || targetField.type == "date") && targetField.initValue != targetField.value) {
           fulfilled = true;
         }
         else if(targetField.initValue != targetField.input_elm.value) {
@@ -647,11 +685,10 @@ class Field {
             this.value = targetField.value
           }
           else {
-            for(let i = 0; i < this.date_inputs_elm.length; ++i) {
-              this.date_inputs_elm[i].value = targetField.date_inputs_elm[i].value;
+            this.updateDateValue(targetField.inputs_elm);
+            for(let i = 0; i < this.inputs_elm.length; ++i) {
+              this.inputs_elm[i].value = targetField.inputs_elm[i].value;
             }
-            this.value = this.date_inputs_elm[0].value + "-" + this.date_inputs_elm[1].value + "-" + this.date_inputs_elm[2].value;
-            this.input_elm.value = this.value;
           }
         } 
       }
@@ -661,15 +698,30 @@ class Field {
     }
   }
 
+  updateDateValue(inputs_elm) {
+    let date_comps_indexes = {y: null, m: null, d: null};
+    inputs_elm.forEach((elm, i) => {
+      if(elm.value.length == 1) { elm.value = "0" + elm.value; }
+      if(elm.dataset.type == "DD" || elm.dataset.type == "dd") { date_comps_indexes.d = i; }
+      else if(elm.dataset.type == "MM" || elm.dataset.type == "mm") { date_comps_indexes.m = i; }
+      else { date_comps_indexes.y = i; }
+    });
+    let dIElm = inputs_elm;
+    let y_value = (dIElm[date_comps_indexes.y].value.length == 4) ? dIElm[date_comps_indexes.y].value : "20"+dIElm[date_comps_indexes.y].value;
+    this.value = y_value + "-" + dIElm[date_comps_indexes.m].value + "-" + dIElm[date_comps_indexes.d].value;
+    this.input_elm.value = this.value;
+  }
+
   generateDateField(field) {
+    var that = this;
     if(!field.format) {field.format = "YYYY.MM.AA"}
-    this.value = "";
-    let date = new Date(field.initValue);
-    this.initValue = (date) ? field.initValue : "";
+    let date = (field.initValue) ? new Date(field.initValue) : new Date();
     var initYearValue = date.getFullYear().toString();
-    let initMonthValue = (date.getMonth()+1).toString(); initMonthValue = (initMonthValue.length == 2) ? (initMonthValue) : ("0" + initMonthValue);
-    let initDayValue = date.getDate().toString(); initDayValue = (initDayValue.length == 2) ? initDayValue : ("0" + initDayValue);
+    var initMonthValue = (date.getMonth()+1).toString();
+    initMonthValue = (initMonthValue.length == 2) ? (initMonthValue) : ("0" + initMonthValue);
+    var initDayValue = date.getDate().toString(); initDayValue = (initDayValue.length == 2) ? initDayValue : ("0" + initDayValue);
     this.initValue = initYearValue + "-" + initMonthValue + "-" + initDayValue;
+    this.value = this.initValue;
     let format_arr = splitWhereOneOfSeperators(field.format, ["-",".",":"," ", ","]);
     this.input_elm = document.createElement("input"); this.input_elm.setAttribute("type", "hidden");
     this.input_elm.value = this.initValue;
@@ -677,7 +729,7 @@ class Field {
       this.label_elm = document.createElement("label"); this.label_elm.textContent = field.label;
       this.label_elm.setAttribute("style", "width: 100%; margin-bottom: 0px; margin-left: 5px; margin-top: 10px");
     }
-    this.date_inputs_elm = []; this.date_labels_elm = []; this.date_units = [];
+    this.inputs_elm = []; this.labels_elm = []; this.date_units = [];
     format_arr.forEach((unit: string) => {
       let input = document.createElement("input");
       input.type = "number"; input.min = "1"; input.setAttribute("class", "form form-control");
@@ -704,23 +756,12 @@ class Field {
       }
       if(!this.label) { label.textContent = label_str; }
       input.setAttribute("data-type", unit);
-      input.addEventListener("input", () => {
-        let date_comps = {y: null, m: null, d: null}; let indexes = [];
-        this.date_inputs_elm.forEach((elm, i) => {
-          if(elm.value.length == 1) { elm.value = "0" + elm.value; }
-          if(elm.dataset.type == "DD" || elm.dataset.type == "dd") { date_comps.d = i; }
-          else if(elm.dataset.type == "MM" || elm.dataset.type == "mm") { date_comps.m = i; }
-          else { date_comps.y = i; }
-        });
-        let dIElm = this.date_inputs_elm;
-        let y_value = (dIElm[date_comps.y].value.length == 4) ? dIElm[date_comps.y].value : "20"+dIElm[date_comps.y].value;
-        this.value = y_value + "-" + dIElm[date_comps.m].value + "-" + dIElm[date_comps.d].value;
-        this.input_elm.value = this.value;
-      });
+      input.addEventListener("input", () => { that.updateDateValue(that.inputs_elm); });
       this.date_units.push(unit);
-      if(this.label) { this.date_labels_elm.push(label); }
-      this.date_inputs_elm.push(input);
+      if(this.label) { this.labels_elm.push(label); }
+      this.inputs_elm.push(input);
     });
+    console.log(this);
   }
 
   setHtmlAttributs(attributs: Array<{}>) {
@@ -1006,7 +1047,7 @@ class FormPannel {
     let fields = this.fields;
     this.fields = [];
     this.generateFields(that, fields, scrollElm);
-    this.initConditinalFields();
+    this.initConditionalFields();
     this.elm.appendChild(scrollElm);
 
     this.initDisplay();
@@ -1155,23 +1196,30 @@ class FormPannel {
     return field;
   }
 
-  initConditinalFields() {
-    this.conditionalFields.forEach((conditionnalField) => {
+  initConditionalFields() {
+    this.conditionalFields.forEach((conditionalField) => {
       this.fields.forEach((field) => {
-        if(field.key == conditionnalField.condition.key) {
-          conditionnalField.check_condition(field);
-          if(field.type != "date" && field.type != "switch") {
+        if(field.key == conditionalField.condition.key) {
+          conditionalField.check_condition(field);
+          if(!["date", "switch", "switchGroup"].includes(field.type)) {
             field.input_elm.addEventListener("input", (e) => {
-              conditionnalField.check_condition(field);
+              conditionalField.check_condition(field);
             });
           }
           else if(field.type == "switch") {
-            field.conditionalFields.push(conditionnalField);
+            field.conditionalFields.push(conditionalField);
+          }
+          else if(field.type == "switchGroup") {
+            field.inputs_elm.forEach((input_elm) => {
+              input_elm.addEventListener("click", (e) => {
+                conditionalField.check_condition(field);
+              });
+            });
           }
           else {
-            field.date_inputs_elm.forEach((input_elm) => {
+            field.inputs_elm.forEach((input_elm) => {
               input_elm.addEventListener("input", (e) => {
-                conditionnalField.check_condition(field);
+                conditionalField.check_condition(field);
               });
             });
           }
@@ -1342,9 +1390,9 @@ class FormPannel {
 
   submitField(field, values) {
     let initValue = (typeof field.initValue !== "undefined") ? field.initValue : "";
-    if(field.type == "text" || field.type == "password" || field.type == "number" || field.type == "select" || field.type == "date") {
+    if(["text", "password", "number", "select", "date"].includes(field.type)) {
       // On ne soumet que les champs dont la valeur a été modifiée
-      if(field.input_elm.value != initValue || field.submit === true) {
+      if(field.input_elm.value != initValue || field.required === true) {
         // Si le champs possède un attribut key il sera renvoyé sous forme d'objet (key: value)
         if(typeof field.key !== "undefined") {
           let objTextField = {};
@@ -1359,13 +1407,13 @@ class FormPannel {
         }
       }
     }
-    else if(field.type == "switch") {
+    else if(field.type == "switch" || field.type == "switchGroup") {
       // On ne soumet que les champs dont la valeur a été modifiée
-      if(field.value != initValue) {
+      if(field.value != initValue || field.required === true) {
         // Si le champs possède un attribut key il sera renvoyé sous forme d'objet (key: value)
         if(typeof field.key !== "undefined") {
           let objSwitchField = {};
-          objSwitchField[field.key] = field.value;
+          objSwitchField[field.key] = (field.type == "switch") ? field.value : parseInt(field.value);
           values.push(objSwitchField);
         }
         else {
@@ -1769,7 +1817,7 @@ export function alert(message: string | Error, title?: string, callback?: Functi
   }, callback);
 }
 
-export function confirm(message: string, title = tr.title("confirm"), callback: Function) {
+export function confirm(message: string, callback: Function, title = tr.title("confirm"), options) {
   if(typeof title == "function") {
     callback = title;
     title = tr.title("confirm");
@@ -1780,11 +1828,12 @@ export function confirm(message: string, title = tr.title("confirm"), callback: 
     footer: [
       {action: "confirm", value: tr.btn("confirm"), BSClass: "btn-danger"},
       {action: "abort", value: tr.btn("cancel"), BSClass: "btn-warning"}
-    ]
+    ],
+    options: options
   }, callback);
 }
 
-export function prompt(message: string, title:string = tr.title("entry"), callback: any, options = {maxWidth: 500}) {
+export function prompt(message: string, callback: any, title:string = tr.title("entry"), options = {maxWidth: 500}) {
   new modal({
     title: title,
     fields: [{type: "message", message: message}, {type: "text"}],
