@@ -176,13 +176,13 @@ At the moment, the documentation is far to be complete. For more informations, y
 #### Date field specific attribut
 * **format** (string) : specifies the date format for the field generation. For instance it can takes "YYYY.MM.DD", "dd.mm.yyyy" or "DD:MM:YY"... At submission, date field will return  a **ISO-8601** formatted string.
 
-#### Field condition
-A field which has a **condition attribut** will activate an action if the given condition is satisfied. This applies at init but is also reactive to users inputs. The condition value can be either a **boolean** or a **condition_descriptor**. By default the triggered action is displaying the field or not. The simplest case would be to set the attribut condition to false which would hide the field upon init. Another example would be setting the condition to : {key: [field key], value: [value]}, which would display the conditionnal field each time that the field of key [key] has value [value] and hide it else. Finally, it can also take an **array of condition_descriptor**. condition_descriptor consists in an object structured as follows :
-* **key** (string) : the key of the field on which the condition will be tested
-* **value** (any) : the value to be tested
-* **operator** (string) : accepts : **"=="** | **"!="** | **"<"** | **">"** | **"<="** | **">="** | **"hasChanged"**. Operator "hasChanged" returns true if current value differs from initValue. If not provided, "==" is set by default.
-* **action** (string | Array<string>) : accepts **"show"** and **"getValue"**. Is triggered if condition is fulfilled. "getValue" sets the value of the conditionnal field to the value of the targeted one. If action not provided, "show" is set by default.
-* Since this mecanisme is very simple to use and very efficient, more actions will be added later on.
+#### Conditional field
+A field which has a **condition attribut** will activate an action if the given condition is satisfied. This applies at init but is also reactive to users inputs. The condition value can be either a **boolean** or a **condition_descriptor**. By default the triggered action is displaying the field or not. The simplest use case would be to set the attribut condition to false which would hide the field upon init. Another example would be setting the condition to : {key: [field key], value: [value]}, which would display the conditional field each time that the field of key [key] has value [value] and hide it else. Finally, it can also take an **array of condition_descriptor**. condition_descriptor consists in an object structured as follows :
+* **key** (string) : the key of the targeted field on which the condition will be tested (must be different from the field on which de condition applies)
+* **hasValue** (any) : the value to be tested
+* **operator** (string) : accepts : **"=="** | **"!="** | **"<"** | **">"** | **"<="** | **">="** | **"hasChanged"**. Operator "hasChanged" returns true if targeted field's current value differs from its initValue. If not provided, "==" is set by default.
+* **action** (string | Array<string>) : accepts **"show"** and **"sync"**. Is triggered if condition is fulfilled. "sync" sets the value of the conditional field to the value of the targeted one. If action not provided, "show" is set by default. Since this mecanism is very simple and efficient, more actions will be added later on.
+* **list** (Array<string>) : if condition is fulfield, update conditionnal field's attribut list by this one. Does only apply on fields of type **"select"**. Using this attribut implies no need to specify an **action**, as it consists in it in itself.
 
 ### <a name="3_2"></a> 3.2 Contextual menus
 * A contextmenu can be triggered from **right click** or can be used as a **dropdown menu** by triggering it from a normal click event.

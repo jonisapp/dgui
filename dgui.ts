@@ -46,13 +46,30 @@ export function elementBelongsToDataType(element: any, dataType: string) {
 }
 
 export function splitWhereOneOfSeperators(str: string, separators: Array<string>) {
-  console.log(str);
   let i = 0, str_arr = [];
   do {
     str_arr = str.split(separators[i]); ++i;
   }
   while(str_arr.length == 1);
   return str_arr;
+}
+
+export function notEmpty(obj: {} | []) {
+  if(typeof obj === "object") {
+    return Object.keys(obj).length !== 0;
+  }
+  else if(Array.isArray(obj)) {
+    return true;
+  }
+  return false;
+}
+
+export function setModifier(path: string, obj1: {}) {
+  let obj2 = {};
+  for(let attr in obj1) {
+    obj2[path + "." + attr] =  obj1[attr];
+  }
+  return {$set: obj2};
 }
 
 export function disableDefaultContextmenu(elm: any) {
@@ -193,10 +210,6 @@ class ColorSet {
     rgb.r = Math.round(rgb.r + ((diff / 4) * (((rgb.g + rgb.b) / 2) / rgb.r)));
     rgb.g = Math.round(rgb.g + ((diff / 4) * (((rgb.r + rgb.b) / 2) / rgb.g)));
     rgb.b = Math.round(rgb.b + ((diff / 4) * (((rgb.r + rgb.g) / 2) / rgb.b)));
-    console.log("--------------------");
-    console.log(rgb.r);
-    console.log(rgb.g);
-    console.log(rgb.b)
     return rgb;
   }
 
@@ -367,9 +380,9 @@ interface field_radioButton {
 
 interface field_condition {
   key: string;
-  value: string | number | Array<string> | Array<number>;        // If field of key [key] has value [value], display the field
+  hasValue: string | number | Array<string> | Array<number>;        // If field of key [key] has value [value], display the field
   operator: "==" | "!=" | "<" | ">" | "<=" | ">=" | "hasChanged";
-  action: "show" | "getValue";
+  action: "show" | "sync";
 }
 
 /* --------------------------------- CLASS Field -------------------------------------------------------*/
@@ -392,6 +405,7 @@ class Field {
   group: string;
   // constroller
   parent?: FormPannel;
+  conditionalFields: Array<Field>;
   input_elm: any;
   date_inputs_elm?: Array<HTMLInputElement>;
   date_labels_elm?: Array<HTMLLabelElement>;
@@ -420,6 +434,7 @@ class Field {
     if(field.group) {
       field.type = "switch";
     }
+    this.conditionalFields = [];
     /*                                            - init according to type -                            */
     switch(field.type) {
       case "switch":
@@ -439,6 +454,9 @@ class Field {
               if(group.name == that.group) {
                 group.fields.forEach((field) => {
                   field.value = false;
+                  field.conditionalFields.forEach((cf) => {
+                    cf.check_condition(field);
+                  });
                   field.input_elm.setAttribute("class", "invoice-leftMenu-button");
                 });
               }
@@ -446,6 +464,9 @@ class Field {
           }
           elm.setAttribute("class", "invoice-leftMenu-button-selected");
           that.value = true;
+          that.conditionalFields.forEach((cf) => {
+            cf.check_condition(that);
+          });
         }
         else {
           elm.setAttribute("class", "invoice-leftMenu-button");
@@ -600,34 +621,37 @@ class Field {
     let operator = (this.condition.operator) ? this.condition.operator : "==";
     this.condition.action = (this.condition.action) ? this.condition.action : ["show"];
     this.condition.action = (Array.isArray(this.condition.action)) ? this.condition.action : [this.condition.action];
-    this.condition.value = (this.condition.value) ? this.condition.value : 0;
-    if(Array.isArray(this.condition.value)) {
-      this.elm.style.display = (this.condition.value.includes(targetField.input_elm.value)) ? "block" : "none";
+    this.condition.hasValue = (this.condition.hasValue) ? this.condition.hasValue : 0;
+    if(Array.isArray(this.condition.hasValue)) {
+      this.elm.style.display = (this.condition.hasValue.includes(targetField.input_elm.value)) ? "block" : "none";
     }
     else {
       let fulfilled = false;
-      var value1 = (this.condition.value) ? this.condition.value : "0";
-      var value2 = (targetField.input_elm.value) ? targetField.input_elm.value : "0";
-      console.log(value1); console.log(value2);
+      var value1 = (this.condition.hasValue) ? this.condition.hasValue : "0";
+      var value2 = (targetField.value) ? targetField.value : "0";
       if(operator == "hasChanged") {
-        if(targetField.initValue != targetField.value) {
+        if(targetField.type == "switch" && targetField.initValue != targetField.value) {
+          fulfilled = true;
+        }
+        else if(targetField.initValue != targetField.input_elm.value) {
           fulfilled = true;
         }
       }
       else if(eval(value1 + operator + value2)) {
-        console.log("condition remplive");
         fulfilled = true;
       }
       if(fulfilled) {
         if(this.condition.action.includes("show")) { this.elm.style.display = "block"; }
-        if(this.condition.action.includes("getValue")) {
-          if(this.type =! "date" && targetField.type != "date") {
+        if(this.condition.action.includes("sync")) {
+          if(this.type != "date" && targetField.type != "date") {
             this.value = targetField.value
           }
           else {
             for(let i = 0; i < this.date_inputs_elm.length; ++i) {
               this.date_inputs_elm[i].value = targetField.date_inputs_elm[i].value;
             }
+            this.value = this.date_inputs_elm[0].value + "-" + this.date_inputs_elm[1].value + "-" + this.date_inputs_elm[2].value;
+            this.input_elm.value = this.value;
           }
         } 
       }
@@ -960,7 +984,7 @@ class FormPannel {
       }
     }
     if(!this.options.shape) {this.options.shape = "rounded";}
-    if(!this.options.color) {console.log(this.options);this.options.color = "#D3D3D3";}
+    if(!this.options.color) {this.options.color = "#D3D3D3";}
     this.colorSet = new ColorSet(this.options.color);
 
     this.elm = document.createElement("div");
@@ -1136,10 +1160,13 @@ class FormPannel {
       this.fields.forEach((field) => {
         if(field.key == conditionnalField.condition.key) {
           conditionnalField.check_condition(field);
-          if(field.type != "date") {
+          if(field.type != "date" && field.type != "switch") {
             field.input_elm.addEventListener("input", (e) => {
               conditionnalField.check_condition(field);
             });
+          }
+          else if(field.type == "switch") {
+            field.conditionalFields.push(conditionnalField);
           }
           else {
             field.date_inputs_elm.forEach((input_elm) => {
@@ -1214,7 +1241,9 @@ class FormPannel {
       values.push(this.submitFields(this.fields));
     }
     if(this.groups) {
-      values.push(this.submitGroups(this.groups));
+      if(this.groups.length > 0) {
+        values.push(this.submitGroups(this.groups));
+      }
     }
     if(this.MDI) {
       this.MDI.sections.map(function(section) {
@@ -1248,23 +1277,28 @@ class FormPannel {
       Promise.all(promises).then(() => {that.quit();}).catch((err) => { that.errorMessage(err.message); });
     }
     let proper_values = this.properType(values);
-    this.parent.submit({value: proper_values, end: function(){
-      that.parent.quit();
-    }, errorMessage: function(message) {
-      that.errorMessage_elm.textContent = message;
-      that.errorMessage_elm.style.display = "block";
-    }, serverError: function(err) {
-      if(err) {
-        modalForm({
-          title: tr.title("serverError"),
-          fields: [
-            {type: "message", message: tr.msg("serverError")},
-            {type: "message", message: "<div style='background-color: white; width: 100%; padding: 5px; color: red'>" + err + "</div>"}
-          ], footer: [{value: tr.btn("ok"), action: "quit", BSClass: "btn-success"}],
-          options: {width: 600, color: "#ff5151"}
-        }, ()=> {});
-      }
-    }});
+    if(Object.keys(proper_values).length !== 0) {
+      this.parent.submit({value: proper_values, end: function() {
+        that.parent.quit();
+      }, errorMessage: function(message) {
+        that.errorMessage_elm.textContent = message;
+        that.errorMessage_elm.style.display = "block";
+      }, serverError: function(err) {
+        if(err) {
+          modalForm({
+            title: tr.title("serverError"),
+            fields: [
+              {type: "message", message: tr.msg("serverError")},
+              {type: "message", message: "<div style='background-color: white; width: 100%; padding: 5px; color: red'>" + err + "</div>"}
+            ], footer: [{value: tr.btn("ok"), action: "quit", BSClass: "btn-success"}],
+            options: {width: 600, color: "#ff5151"}
+          }, ()=> {});
+        }
+      }});
+    }
+    else {
+      this.quit();
+    }
   }
 
   returnPromise(objet, section) { 
@@ -1750,7 +1784,7 @@ export function confirm(message: string, title = tr.title("confirm"), callback: 
   }, callback);
 }
 
-export function prompt(message, title = tr.title("entry"), callback, maxWidth=500) {
+export function prompt(message: string, title:string = tr.title("entry"), callback: any, options = {maxWidth: 500}) {
   new modal({
     title: title,
     fields: [{type: "message", message: message}, {type: "text"}],
@@ -1758,11 +1792,11 @@ export function prompt(message, title = tr.title("entry"), callback, maxWidth=50
       {action: "submit", value: tr.btn("valid"), BSClass: "btn-danger"},
       {action: "quit", value: tr.btn("cancel"), BSClass: "btn-warning"}
     ],
-    display: {maxWidth: maxWidth}
+    options: options
   }, callback);
 }
 
-export function choose(title = tr.title("choice"), message, name, radioButtons, callback) {
+export function choose(title = tr.title("choice"), message: string, name, radioButtons, callback) {
   new modal({
     title: title,
     fields: [
@@ -1780,7 +1814,7 @@ export function modalForm(parameters, callback) {
   new modal(parameters, callback);
 }
 
-export function ownmodal(htmlElm, clean, title="Boîte de modale personnalisée") {
+export function ownmodal(htmlElm: any, clean, title="Boîte de modale personnalisée") {
   new modal({
     type: "html",
     title: title,
