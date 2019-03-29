@@ -322,6 +322,12 @@ class Button {
     this.elm.textContent = label;
   }
 
+  setFunction(actionFunction) {
+    this.elm.addEventListener("click", (e) => {
+      actionFunction();
+    });
+  }
+
   setAction(action) {
     var that = this;
     switch(action) {
@@ -484,6 +490,12 @@ class Field {
           else {
             elm.setAttribute("class", "invoice-leftMenu-button");
             that.value = false;
+          }
+          // action
+          if(typeof that.action !== "undefined") {
+            if(typeof that.action === "function") {
+              that.action(that.value);
+            }
           }
         });
         break;
@@ -955,8 +967,39 @@ class MDI {
   }
 }
 
+var dguiUserInterface = {
+  dguiObjects: {}
+}
+
+export const get = function(interfaceObj_str: string) {
+  return (dguiUserInterface.dguiObjects[interfaceObj_str]) ? dguiUserInterface.dguiObjects[interfaceObj_str] : false;
+}
+
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////// Form dGUI ///////////////////////////////////////////////////////////
+
+class BlazeTemplate {
+  elm: any;
+  template: any;
+  instance: any;
+
+  constructor(template) {
+    this.template = template;
+    this.elm = document.createElement("div");
+    this.render();
+    this.elm.setAttribute("style", "width: 1110px; height: 550px;");
+  }
+
+  render() {
+    if(this.instance) { this.remove(); }
+    this.instance = Blaze.render(this.template, this.elm);
+  }
+
+  remove() {
+    Blaze.remove(this.instance);
+  }
+}
 
 /* --------------------------------- Interfaces FormPannel ---------------------------------------------*/
 
@@ -984,6 +1027,7 @@ interface formPannel_fieldGroup {
 /* --------------------------------- CLASS FormPannel --------------------------------------------------*/
 
 class FormPannel {
+  name: string;
   id: string;
   type: string
   parent: modal;
@@ -995,6 +1039,7 @@ class FormPannel {
   // user & controller
   errorMessage_elm: any;
   MDI: MDI;
+  template: BlazeTemplate;
   footer_elm: HTMLDivElement;
   // controller
   elm: HTMLDivElement;
@@ -1007,6 +1052,12 @@ class FormPannel {
     for(let property in properties) {
       this[property] = properties[property];
     }
+
+    if(this.name) {
+      dguiUserInterface.dguiObjects[this.name] = this;
+      console.log(dguiUserInterface);
+    }
+
     this.parent = parent;
     this.groups = []; this.conditionalFields = [];
 
@@ -1029,7 +1080,7 @@ class FormPannel {
     this.colorSet = new ColorSet(this.options.color);
 
     this.elm = document.createElement("div");
-    this.elm.setAttribute("style", "background-color: #B9BAB8; padding: 5px; padding-top: 0px; border-radius: 7px; margin-bottom: 30px; border: 1px solid #B2B2B2;");
+    this.elm.setAttribute("style", "background-color: #B9BAB8; padding: 5px; padding-top: 0px; border-radius: 7px; border: 1px solid #B2B2B2;");
     this.elm.style.backgroundColor = this.colorSet.thrColor;
     this.elm.addEventListener("keydown", function(e) {
       if(e.keyCode == 13) {
@@ -1069,7 +1120,12 @@ class FormPannel {
     if(typeof this.MDI !== "undefined") {
       formPannelBody.appendChild(this.MDI.elm);
     }
+    if(this.template) {
+      this.template = new BlazeTemplate(this.template);
+      formPannelBody.appendChild(this.template.elm);
+    }
     formPannelBody.setAttribute("style", "padding: 10px; border-radius: 7px; text-align: center;");
+    if(this.template) { formPannelBody.style.padding = "0px"; }
     formPannelBody.style.backgroundColor = this.colorSet.prmColor;
     if(this.options.shape == "squared") {
       formPannelBody.style.borderRadius = "0px";
@@ -1258,10 +1314,21 @@ class FormPannel {
     }
     this.footer_elm = document.createElement("div");
     this.footer_elm.setAttribute("class", "form-pannel-footer");
+    if(this.template) { this.footer_elm.style.marginTop = "10px"; }
     var that = this;
-    this.footer.map(function(button_params) {
-      let button = new Button(that, button_params.value, button_params.BSClass);
-      button.setAction(button_params.action);
+    this.footer.forEach((button_descriptor) => {
+      if(typeof button_descriptor.type === "undefined") {
+        var button = new Button(that, button_descriptor.value, button_descriptor.BSClass);
+        if(typeof button_descriptor.action === "string") {
+          button.setAction(button_descriptor.action);
+        }
+        else if(typeof button_descriptor.action === "function") {
+          button.setFunction(button_descriptor.action);
+        }
+      }
+      else {
+        var button = new Field(button_descriptor);
+      }
       that.footer_elm.appendChild(button.elm);
     });
   }
@@ -1279,6 +1346,9 @@ class FormPannel {
   }
 
   quit() {
+    if(this.template) {
+      this.template.remove();
+    }
     this.parent.quit();
   }
 
@@ -1326,6 +1396,7 @@ class FormPannel {
     }
     let proper_values = this.properType(values);
     if(Object.keys(proper_values).length !== 0) {
+      console.log(that);
       this.parent.submit({value: proper_values, end: function() {
         that.parent.quit();
       }, errorMessage: function(message) {
@@ -1342,7 +1413,7 @@ class FormPannel {
             options: {width: 600, color: "#ff5151"}
           }, ()=> {});
         }
-      }});
+      }, templateRender: (that.template) ? that.template.render : null});
     }
     else {
       this.quit();
@@ -1584,25 +1655,25 @@ class ContextMenu {
     //                                            - Initial DOM setup -
     this.elm = document.createElement("div");
     this.elm.setAttribute("class", "dgui-contextMenu light-shadow");
-    this.elm.setAttribute("data-type", "dgui_contextMenu")
-    if(this.options) {
-      if(this.options.initPosition) {
-        var htmlTargetPosition = event.currentTarget.getBoundingClientRect();
-        if(this.parent) {
-          htmlTargetPosition = this.parent.elm.getBoundingClientRect();
-        }
-        switch(this.options.initPosition) {
-          case "mouse":
-            this.elm.style.left = event.clientX + window.scrollX + "px";
-            this.elm.style.top = event.clientY + window.scrollY + "px"; break;
-          case "bottom":
-            this.elm.style.left = htmlTargetPosition.left + window.scrollX + "px";
-            this.elm.style.top = htmlTargetPosition.bottom + window.scrollY + "px"; break;
-          case "right":
-            this.elm.style.left = htmlTargetPosition.right + window.scrollX + "px";
-            this.elm.style.top = htmlTargetPosition.top + window.scrollY + "px"; break;       
-        }
-      }
+    this.elm.setAttribute("data-type", "dgui_contextMenu");
+
+    if(typeof this.options === "undefined") { this.options = {initPosition: "mouse"}; }
+    if(typeof this.options.initPosition === "undefined") { this.options.initPosition = "mouse"; }
+
+    var htmlTargetPosition = event.currentTarget.getBoundingClientRect();
+    if(this.parent) {
+      htmlTargetPosition = this.parent.elm.getBoundingClientRect();
+    }
+    switch(this.options.initPosition) {
+      case "mouse":
+        this.elm.style.left = event.clientX + window.scrollX + "px";
+        this.elm.style.top = event.clientY + window.scrollY + "px"; break;
+      case "bottom":
+        this.elm.style.left = htmlTargetPosition.left + window.scrollX + "px";
+        this.elm.style.top = htmlTargetPosition.bottom + window.scrollY + "px"; break;
+      case "right":
+        this.elm.style.left = htmlTargetPosition.right + window.scrollX + "px";
+        this.elm.style.top = htmlTargetPosition.top + window.scrollY + "px"; break;       
     }
     //                                            - Initial events -
     disableDefaultContextmenu(this.elm);

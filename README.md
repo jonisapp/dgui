@@ -182,7 +182,7 @@ A field which has a **condition attribut** will activate an action if the given 
 * **hasValue** (any) : the value to be tested
 * **operator** (string) : accepts : **"=="** | **"!="** | **"<"** | **">"** | **"<="** | **">="** | **"hasChanged"**. Operator "hasChanged" returns true if targeted field's current value differs from its initValue. If not provided, "==" is set by default.
 * **action** (string | Array<string>) : accepts **"show"** and **"sync"**. Is triggered if condition is fulfilled. "sync" sets the value of the conditional field to the value of the targeted one. If action not provided, "show" is set by default. Since this mecanism is very simple and efficient, more actions will be added later on.
-* **list** (Array<string>) : if condition is fulfield, update conditionnal field's attribut list by this one. Does only apply on fields of type **"select"**. Using this attribut implies no need to specify an **action**, as it consists in it in itself.
+* **list** (Array<string>) : if condition is fulfilled, replace conditional field's attribut list by this one. Does only apply on fields of type **"select"**. Using this attribut implies no need to specify an **action**, as it consists in an action in itself.
 
 ### <a name="3_2"></a> 3.2 Contextual menus
 * A contextmenu can be triggered from **right click** or can be used as a **dropdown menu** by triggering it from a normal click event.
@@ -199,7 +199,7 @@ A field which has a **condition attribut** will activate an action if the given 
 #### Switch field specific attributs
 * **initValue** (boolean)
 * **action** (Function) : triggered by a click on the field
-* **switchLock** (boolean) : specifies if a click on a switch keeps the contextmenu opened or not
+* **switchLock** (boolean) : defines if a click on a switch keeps the contextmenu opened or not
 * **group** (string) : if two or more switches belong to the same group, the last one to be switched on causes the others to be switched off
 
 #### Button field specific attribut
