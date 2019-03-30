@@ -41,6 +41,48 @@
 	padding: 5px 20px 5px 20px;
 }
 
+.dgui-field-text {
+    display: block;
+    width: 100%;
+    height: 36px;
+    background-color: white;
+    color: #141414;
+    font-family: robotoRegular;
+    border-radius: 5px;
+    border: 1px solid #b7b8b8;
+    padding: 5px;   
+}
+.dgui-field-text:focus {
+    box-shadow: 5px 10px;
+    outline: none;
+    -webkit-box-shadow: 0px 0px 5px 2px rgba(106,255,0,0.5);
+    -moz-box-shadow: 0px 0px 5px 2px rgba(106,255,0,0.5);
+    box-shadow: 0px 0px 5px 2px rgba(106,255,0,0.5);
+}
+
+.dgui-field-switch {
+	display: flex;
+	vertical-align: middle;
+	border: 1px solid #8A8A8A;
+	margin-top: 5px;
+	border-radius: 5px;
+	background-color: #CECECE;
+	text-align: center;
+	height: 32px;
+	color: #323232;
+	cursor: default;
+}
+.dgui-field-switch-selected {
+    height: 32px;
+    border-radius: 5px;
+	background-color: #696969;
+    color: white;
+    cursor: default;
+}
+.dgui-field-switch:hover {
+	background-color: #D1DAD1;
+}
+
 .dgui-contextMenu {
     background-color: rgba(189, 192, 196, 0.9);
     position: absolute;

@@ -448,13 +448,13 @@ class Field {
           that.generateSwitch(input_elm, switchLabel);
           that.inputs_elm.push(input_elm);
         });
-        this.inputs_elm[this.initValue].setAttribute("class", "invoice-leftMenu-button-selected");
+        this.inputs_elm[this.initValue].setAttribute("class", "dgui-field-switch-selected");
         this.inputs_elm.forEach((input_elm, i) => {
           input_elm.addEventListener("click", (e) => {
             that.inputs_elm.forEach((ie) => {
-              ie.setAttribute("class", "invoice-leftMenu-button");
+              ie.setAttribute("class", "dgui-field-switch");
             });
-            e.currentTarget.setAttribute("class", "invoice-leftMenu-button-selected");
+            e.currentTarget.setAttribute("class", "dgui-field-switch-selected");
             that.value = e.currentTarget.dataset.value;
             console.log(that.value);
           });
@@ -463,7 +463,8 @@ class Field {
       case "switch":
         this.input_elm = document.createElement("div");
         this.generateSwitch(this.input_elm, this.label);
-        this.input_elm.setAttribute("class", (this.initValue) ? "invoice-leftMenu-button-selected" : "invoice-leftMenu-button");
+        this.input_elm.setAttribute("class", (this.initValue) ? "dgui-field-switch-selected" : "dgui-field-switch");
+        this.input_elm.style.height = "36px";
         this.value = this.initValue;
         this.input_elm.addEventListener("click", (e) => {
           let elm = e.currentTarget;
@@ -476,19 +477,19 @@ class Field {
                     field.conditionalFields.forEach((cf) => {
                       cf.check_condition(field);
                     });
-                    field.input_elm.setAttribute("class", "invoice-leftMenu-button");
+                    field.input_elm.setAttribute("class", "dgui-field-switch");
                   });
                 }
               });
             }
-            elm.setAttribute("class", "invoice-leftMenu-button-selected");
+            elm.setAttribute("class", "dgui-field-switch-selected");
             that.value = true;
             that.conditionalFields.forEach((cf) => {
               cf.check_condition(that);
             });
           }
           else {
-            elm.setAttribute("class", "invoice-leftMenu-button");
+            elm.setAttribute("class", "dgui-field-switch");
             that.value = false;
           }
           // action
@@ -517,7 +518,9 @@ class Field {
         this.initLabel(field);
         this.input_elm = document.createElement("input");
         this.input_elm.setAttribute("type", field.type);
-        this.input_elm.setAttribute("class", "form form-control");
+        // this.input_elm.setAttribute("class", "form form-control");
+        this.input_elm.setAttribute("class", "dgui-field-text");
+        this.input_elm.style.height = "36px";
         this.input_elm.setAttribute("autocorrect", "off");
         if(field.placeholder) {
           this.input_elm.setAttribute("placeholder", field.placeholder);
@@ -528,12 +531,18 @@ class Field {
         if(field.max) {
           this.input_elm.setAttribute("maxlength", field.max);
         }
+        if(typeof this.action === "function") {
+          this.input_elm.addEventListener("input", (e) => {
+            this.action(e.currentTarget.value);
+          });
+        }
         break;
       case "select":
         this.initLabel(field);
         if(this.list) {
           this.input_elm = document.createElement("select");
-          this.input_elm.setAttribute("class", "form form-control");
+          // this.input_elm.setAttribute("class", "form form-control");
+          this.input_elm.setAttribute("class", "dgui-field-text");
           this.list.forEach((list_item, i) => {
             let option = document.createElement("option");
             option.setAttribute("value", i.toString());
@@ -546,9 +555,9 @@ class Field {
         } break;
       case "choice":
         if(typeof this.radioButtons !== "undefined") {
-          this.radioButtons.map(function(radioButton, index) {
+          this.radioButtons.forEach((radioButton, i) => {
             radioButton.input_elm = document.createElement("input");
-            let input_elm_id = "radio_"+field.name+"_"+index;
+            let input_elm_id = "radio_"+field.name+"_"+ i;
             radioButton.input_elm.type = "radio";
             radioButton.input_elm.id = input_elm_id;
             radioButton.input_elm.name = field.name;
@@ -658,7 +667,7 @@ class Field {
   }
 
   generateSwitch(input_elm, label) {
-    input_elm.setAttribute("class", "invoice-leftMenu-button");
+    input_elm.setAttribute("class", "dgui-field-switch");
     input_elm.setAttribute("style", "display: flex; justify-content: center; align-items: center; margin-top: 0px");
     let text_elm = document.createElement("div");
     text_elm.textContent = label;
