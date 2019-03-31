@@ -19,6 +19,12 @@
 		src: url('./fonts/Roboto-Bold.ttf');
 }
 
+.dgui-modal-close {
+    display: block;
+    float: right;
+    font-size: 24px;
+}
+
 .dgui-vertical-layout {
     display: flex;
     flex-direction: column;
@@ -68,12 +74,12 @@
 	border-radius: 5px;
 	background-color: #CECECE;
 	text-align: center;
-	height: 32px;
+	height: 36px;
 	color: #323232;
 	cursor: default;
 }
 .dgui-field-switch-selected {
-    height: 32px;
+    height: 36px;
     border-radius: 5px;
 	background-color: #696969;
     color: white;

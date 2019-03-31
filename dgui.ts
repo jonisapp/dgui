@@ -411,6 +411,7 @@ class Field {
   inputs_elm?: Array<HTMLDivElement> | Array<HTMLInputElement>;
   labels_elm?: Array<HTMLLabelElement>;
   date_units: Array<string>;
+  date_comps_indexes: {y: number, m: number, d: number};
   button_elm: HTMLButtonElement;
   elm: any;
   switched: boolean;
@@ -449,12 +450,15 @@ class Field {
           that.inputs_elm.push(input_elm);
         });
         this.inputs_elm[this.initValue].setAttribute("class", "dgui-field-switch-selected");
+        this.inputs_elm[this.initValue].style.backgroundColor = "#696969";
         this.inputs_elm.forEach((input_elm, i) => {
           input_elm.addEventListener("click", (e) => {
             that.inputs_elm.forEach((ie) => {
               ie.setAttribute("class", "dgui-field-switch");
+              ie.style.backgroundColor = that.parent.colorSet.thrColor;
             });
             e.currentTarget.setAttribute("class", "dgui-field-switch-selected");
+            e.currentTarget.style.backgroundColor = "#696969";
             that.value = e.currentTarget.dataset.value;
             console.log(that.value);
           });
@@ -464,6 +468,7 @@ class Field {
         this.input_elm = document.createElement("div");
         this.generateSwitch(this.input_elm, this.label);
         this.input_elm.setAttribute("class", (this.initValue) ? "dgui-field-switch-selected" : "dgui-field-switch");
+        this.input_elm.style.backgroundColor = (this.initValue) ? "#696969" : this.parent.colorSet.thrColor;
         this.input_elm.style.height = "36px";
         this.value = this.initValue;
         this.input_elm.addEventListener("click", (e) => {
@@ -478,11 +483,13 @@ class Field {
                       cf.check_condition(field);
                     });
                     field.input_elm.setAttribute("class", "dgui-field-switch");
+                    field.input_elm.style.backgroundColor = that.parent.colorSet.thrColor;
                   });
                 }
               });
             }
             elm.setAttribute("class", "dgui-field-switch-selected");
+            elm.style.backgroundColor = "#696969";
             that.value = true;
             that.conditionalFields.forEach((cf) => {
               cf.check_condition(that);
@@ -490,6 +497,7 @@ class Field {
           }
           else {
             elm.setAttribute("class", "dgui-field-switch");
+            elm.style.backgroundColor = that.parent.colorSet.thrColor;
             that.value = false;
           }
           // action
@@ -669,6 +677,7 @@ class Field {
   generateSwitch(input_elm, label) {
     input_elm.setAttribute("class", "dgui-field-switch");
     input_elm.setAttribute("style", "display: flex; justify-content: center; align-items: center; margin-top: 0px");
+    input_elm.style.backgroundColor = this.parent.colorSet.thrColor;
     let text_elm = document.createElement("div");
     text_elm.textContent = label;
     input_elm.appendChild(text_elm);
@@ -720,22 +729,33 @@ class Field {
   }
 
   updateDateValue(inputs_elm) {
-    let date_comps_indexes = {y: null, m: null, d: null};
+    var that = this;
     inputs_elm.forEach((elm, i) => {
       if(elm.value.length == 1) { elm.value = "0" + elm.value; }
-      if(elm.dataset.type == "DD" || elm.dataset.type == "dd") { date_comps_indexes.d = i; }
-      else if(elm.dataset.type == "MM" || elm.dataset.type == "mm") { date_comps_indexes.m = i; }
-      else { date_comps_indexes.y = i; }
+      if(elm.dataset.type == "DD" || elm.dataset.type == "dd") { that.date_comps_indexes.d = i; }
+      else if(elm.dataset.type == "MM" || elm.dataset.type == "mm") { that.date_comps_indexes.m = i; }
+      else { that.date_comps_indexes.y = i; }
     });
     let dIElm = inputs_elm;
-    let y_value = (dIElm[date_comps_indexes.y].value.length == 4) ? dIElm[date_comps_indexes.y].value : "20"+dIElm[date_comps_indexes.y].value;
-    this.value = y_value + "-" + dIElm[date_comps_indexes.m].value + "-" + dIElm[date_comps_indexes.d].value;
+    let y_value = (dIElm[this.date_comps_indexes.y].value.length == 4) ? dIElm[this.date_comps_indexes.y].value : "20"+dIElm[this.date_comps_indexes.y].value;
+    this.value = y_value + "-" + dIElm[this.date_comps_indexes.m].value + "-" + dIElm[this.date_comps_indexes.d].value;
     this.input_elm.value = this.value;
+  }
+
+  updateDaysInMonth(month: string) {
+    let tmp_date = new Date(2019, parseInt(month), 15);
+    if(parseInt(this.inputs_elm[this.date_comps_indexes.d].value) > parseInt(this.inputs_elm[this.date_comps_indexes.d].max)) {
+      this.inputs_elm[this.date_comps_indexes.d].value = this.inputs_elm[this.date_comps_indexes.d].max;
+    }
+    let tmp_date = new Date(tmp_date.getFullYear(), tmp_date.getMonth(), 0);
+    console.log(tmp_date.getDate());
+    this.inputs_elm[this.date_comps_indexes.d].max = tmp_date.getDate();  
   }
 
   generateDateField(field) {
     var that = this;
     if(!field.format) {field.format = "YYYY.MM.AA"}
+    this.date_comps_indexes = {y: null, m: null, d: null};
     let date = (field.initValue) ? new Date(field.initValue) : new Date();
     var initYearValue = date.getFullYear().toString();
     var initMonthValue = (date.getMonth()+1).toString();
@@ -751,7 +771,7 @@ class Field {
       this.label_elm.setAttribute("style", "width: 100%; margin-bottom: 0px; margin-left: 5px; margin-top: 10px");
     }
     this.inputs_elm = []; this.labels_elm = []; this.date_units = [];
-    format_arr.forEach((unit: string) => {
+    format_arr.forEach((unit: string, index) => {
       let input = document.createElement("input");
       input.type = "number"; input.min = "1"; input.setAttribute("class", "form form-control");
       unit = unit.toUpperCase();
@@ -761,6 +781,7 @@ class Field {
       var today = new Date();
       switch(unit) {
         case "YYYY": case "YY":
+          this.date_comps_indexes.y = index;
           if(unit == "YYYY") {
             input.value = initYearValue; input.min = today.getFullYear().toString();
           }
@@ -769,10 +790,15 @@ class Field {
           }
           label_str = tr.lbl("year"); break;
         case "MM":
+          this.date_comps_indexes.m = index;
           input.value = initMonthValue; input.max = "12";
-          label_str = tr.lbl("month"); break;
+          label_str = tr.lbl("month"); 
+          input.addEventListener("input", (e) => {
+            //that.updateDaysInMonth(e.currentTarget.value);
+          }); break;
         case "DD":
-          input.value = initDayValue; input.max = "32";
+          this.date_comps_indexes.d = index;
+          input.value = initDayValue;
           label_str = tr.lbl("day"); break;
       }
       if(!this.label) { label.textContent = label_str; }
@@ -990,8 +1016,8 @@ export const get = function(interfaceObj_str: string) {
 
 class BlazeTemplate {
   elm: any;
-  template: any;
-  instance: any;
+  private template: any;
+  private blazeInstance: any;
 
   constructor(template) {
     this.template = template;
@@ -1001,12 +1027,16 @@ class BlazeTemplate {
   }
 
   render() {
-    if(this.instance) { this.remove(); }
-    this.instance = Blaze.render(this.template, this.elm);
+    if(this.blazeInstance) { this.remove(); }
+    this.blazeInstance = Blaze.render(this.template, this.elm);
+  }
+
+  instance() {
+    return this.blazeInstance._templateInstance;
   }
 
   remove() {
-    Blaze.remove(this.instance);
+    Blaze.remove(this.blazeInstance);
   }
 }
 
@@ -1113,12 +1143,22 @@ class FormPannel {
     this.initDisplay();
     // initialisation
     let formPannelHeader = document.createElement("div");
-    formPannelHeader.setAttribute("style", "padding: 7px");
+    formPannelHeader.setAttribute("style", "padding: 7px; padding-top: 4px;");
     let formPannelTitle = document.createElement("div");
     setDefaultCursor(formPannelTitle);
-    formPannelTitle.setAttribute("style", "font-size: 18px; font-weight: bold; color: rgba(0, 0, 0, 0.86);");
+    formPannelTitle.setAttribute("style", "display: inline-block; margin-top: 3px; font-size: 18px; font-weight: bold; color: rgba(0, 0, 0, 0.8);");
     formPannelTitle.textContent = this.title;
     formPannelHeader.appendChild(formPannelTitle);
+    let close_button_elm = document.createElement("div");
+    close_button_elm.setAttribute("class", "dgui-modal-close");
+    close_button_elm.setAttribute("style", "color: " + this.colorSet.fontColor);
+    close_button_elm.addEventListener("click", () => {
+      that.quit();
+    })
+    let close_svg_elm = document.createElement("i");
+    close_svg_elm.setAttribute("class", "fas fa-times");
+    close_button_elm.appendChild(close_svg_elm);
+    formPannelHeader.appendChild(close_button_elm);
     var formPannelBody = document.createElement("div");
     this.errorMessage_elm = document.createElement("div");
     this.errorMessage_elm.setAttribute("style", "display: none; background-color: #e26c6c; color: white; border-radius: 3px; font-weight: normal; margin: 5px;padding: 5px;");

@@ -174,7 +174,7 @@ At the moment, the documentation is far to be complete. For more informations, y
 * **list** (Array<string>) : The options of a HTML select element or the labels of switchGroup buttons. By default, the value of the field is set to the index in the list array.
 
 #### Date field specific attribut
-* **format** (string) : specifies the date format for the field generation. For instance it can takes "YYYY.MM.DD", "dd.mm.yyyy" or "DD:MM:YY"... At submission, date field will return  a **ISO-8601** formatted string.
+* **format** (string) : specifies the date format for the field generation. For instance it can take "YYYY.MM.DD", "dd.mm.yyyy" or "DD:MM:YY"... At submission, date field will return  a **ISO-8601** formatted string.
 
 #### Conditional field
 A field which has a **condition attribut** will activate an action if the given condition is satisfied. This applies at init but is also reactive to users inputs. The condition value can be either a **boolean** or a **condition_descriptor**. By default the triggered action is displaying the field or not. The simplest use case would be to set the attribut condition to false which would hide the field upon init. Another example would be setting the condition to : {key: [field key], value: [value]}, which would display the conditional field each time that the field of key [key] has value [value] and hide it else. Finally, it can also take an **array of condition_descriptor**. condition_descriptor consists in an object structured as follows :
