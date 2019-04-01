@@ -312,7 +312,7 @@ class Translucent {
 
 class Button {
   elm: HTMLElement;
-  parent: FormPannel;
+  parent: Form;
 
   constructor (parent, label, button_BScolor_class) {
     this.parent = parent;
@@ -353,7 +353,7 @@ class Button {
 /* --------------------------------- Interfaces Field --------------------------------------------------*/
 
 interface field_descriptor {
-  type: "message" | "button" | "text" | "number" | "choice" | "switch" | "switchGroup" | "select" | "date";
+  type: "message" | "button" | "text" | "number" | "choice" | "switch" | "switchGroup" | "select" | "selectMany" | "date";
   key: string;
   label: string;
   required: boolean;
@@ -391,12 +391,12 @@ class Field {
 
   /*                                              - Définition -                                        */
   // user
-  type: "message" | "button" | "text" | "number" | "choice" | "switch" | "switchGroup" | "select" | "date";
+  type: "message" | "button" | "text" | "number" | "choice" | "switch" | "switchGroup" | "select" | "selectMany" | "date";
   key: string;
   name: string;
   label: string;
   required: boolean;
-  value: string | boolean | number;
+  value: string | boolean | number | Array<{}>;
   size: number;
   list: Array<string> | Array<Object>;
   action: any;
@@ -404,7 +404,7 @@ class Field {
   BSClass: string;
   group: string;
   // constroller
-  parent?: FormPannel;
+  parent?: Form;
   conditionalFields: Array<Field>;
   input_elm: any;
   label_elm: HTMLLabelElement;
@@ -420,7 +420,7 @@ class Field {
   radioButtons: Array<field_radioButton>;
 
   /*                                              - Constructor -                                       */
-  constructor(field: field_descriptor, parent?: FormPannel) {
+  constructor(field: field_descriptor, parent?: Form) {
     var that = this;
     for(let attribut in field) {
       this[attribut] = field[attribut];
@@ -455,7 +455,7 @@ class Field {
           input_elm.addEventListener("click", (e) => {
             that.inputs_elm.forEach((ie) => {
               ie.setAttribute("class", "dgui-field-switch");
-              ie.style.backgroundColor = that.parent.colorSet.thrColor;
+              ie.style.backgroundColor = that.parent.colorSet.secColor;
             });
             e.currentTarget.setAttribute("class", "dgui-field-switch-selected");
             e.currentTarget.style.backgroundColor = "#696969";
@@ -468,7 +468,7 @@ class Field {
         this.input_elm = document.createElement("div");
         this.generateSwitch(this.input_elm, this.label);
         this.input_elm.setAttribute("class", (this.initValue) ? "dgui-field-switch-selected" : "dgui-field-switch");
-        this.input_elm.style.backgroundColor = (this.initValue) ? "#696969" : this.parent.colorSet.thrColor;
+        this.input_elm.style.backgroundColor = (this.initValue) ? "#696969" : this.parent.colorSet.secColor;
         this.input_elm.style.height = "36px";
         this.value = this.initValue;
         this.input_elm.addEventListener("click", (e) => {
@@ -483,7 +483,7 @@ class Field {
                       cf.check_condition(field);
                     });
                     field.input_elm.setAttribute("class", "dgui-field-switch");
-                    field.input_elm.style.backgroundColor = that.parent.colorSet.thrColor;
+                    field.input_elm.style.backgroundColor = that.parent.colorSet.secColor;
                   });
                 }
               });
@@ -497,7 +497,7 @@ class Field {
           }
           else {
             elm.setAttribute("class", "dgui-field-switch");
-            elm.style.backgroundColor = that.parent.colorSet.thrColor;
+            elm.style.backgroundColor = that.parent.colorSet.secColor;
             that.value = false;
           }
           // action
@@ -528,6 +528,7 @@ class Field {
         this.input_elm.setAttribute("type", field.type);
         // this.input_elm.setAttribute("class", "form form-control");
         this.input_elm.setAttribute("class", "dgui-field-text");
+        this.input_elm.style.borderColor = this.parent.colorSet.secBrdColor;
         this.input_elm.style.height = "36px";
         this.input_elm.setAttribute("autocorrect", "off");
         if(field.placeholder) {
@@ -545,21 +546,27 @@ class Field {
           });
         }
         break;
+      case "selectMany":
+        this.generateSelectManyField(field); break;
       case "select":
         this.initLabel(field);
         if(this.list) {
           this.input_elm = document.createElement("select");
-          // this.input_elm.setAttribute("class", "form form-control");
           this.input_elm.setAttribute("class", "dgui-field-text");
           this.list.forEach((list_item, i) => {
             let option = document.createElement("option");
-            option.setAttribute("value", i.toString());
-            option.textContent = list_item;
+            option.setAttribute("value", (typeof list_item === "string") ? i.toString() : list_item.value);
+            option.textContent = (typeof list_item === "string") ? list_item : list_item.label;
             this.input_elm.appendChild(option);
           });
           this.input_elm.addEventListener("input", (e) => {
             that.value = e.currentTarget.value;
           });
+          if(typeof this.action === "function") {
+            this.input_elm.addEventListener("input", (e) => {
+              this.action(e.currentTarget.value);
+            });
+          }
         } break;
       case "choice":
         if(typeof this.radioButtons !== "undefined") {
@@ -628,7 +635,7 @@ class Field {
     else if(field.type == "button") {
       this.elm.appendChild(this.button_elm);
     }
-    else if(field.type == "text" || field.type == "password" || field.type == "select" || field.type == "number") {
+    else if(["text", "password", "select", "selectMany", "number"].includes(field.type)) {
       if(field.label) {
         this.elm.appendChild(this.label_elm);
       }
@@ -677,7 +684,7 @@ class Field {
   generateSwitch(input_elm, label) {
     input_elm.setAttribute("class", "dgui-field-switch");
     input_elm.setAttribute("style", "display: flex; justify-content: center; align-items: center; margin-top: 0px");
-    input_elm.style.backgroundColor = this.parent.colorSet.thrColor;
+    input_elm.style.backgroundColor = this.parent.colorSet.secColor;
     let text_elm = document.createElement("div");
     text_elm.textContent = label;
     input_elm.appendChild(text_elm);
@@ -728,6 +735,68 @@ class Field {
     }
   }
 
+  updateSelectManyValue(value) {
+    var that = this;
+    this.value = value;
+    let selected_items = "";
+    if(typeof this.list[0] === "string") {
+      value.forEach((val) => {
+        selected_items = selected_items + that.list[val] + ", ";
+      });
+    }
+    else if(typeof this.list[0] === "object") {
+      this.value = [];
+      value.forEach((val) => {
+        that.value.push(that.list[val].value);
+        selected_items = selected_items + that.list[val].label + ", ";
+      });
+    }
+    this.input_elm.textContent = selected_items.slice(0, -2);
+  }
+
+  generateSelectManyField(field) {
+    var that = this;
+    var init_indexes = [];
+    this.value = field.initValue;
+    if(typeof this.list[0] === "string") {
+      field.list.forEach((item, i) => {
+        if(that.initValue.includes(i)) {
+          init_indexes.push(i);
+        }
+      });
+    }
+    else if(typeof this.list[0] === "object") {
+      field.list.forEach((item, i) => {
+        if(that.initValue.includes(item.value)) {
+          init_indexes.push(i);
+        }
+      });
+    }
+    this.initLabel(field);
+    this.input_elm = document.createElement("div");
+    this.input_elm.setAttribute("class", "dgui-field-text");
+    this.updateSelectManyValue(init_indexes);
+    this.input_elm.addEventListener("click", (e) => {
+      let fields = [];
+      if(typeof that.list[0] === "string") {
+        that.list.forEach((item, i) => {
+          fields.push({key: i, label: item, type: "switch", switchLock: true});
+        });
+      }
+      else if(typeof that.list[0] === "object") {
+        that.list.forEach((item, i) => {
+          fields.push({key: i, label: item.label, type: "switch", switchLock: true, initValue: (that.value.includes(item.value))});
+        }); 
+      }
+      contextMenu(e, {
+        fields: fields,
+        options: {initPosition: "bottom"}
+      }, (value) => {
+        that.updateSelectManyValue(value);
+      });
+    });
+  }
+
   updateDateValue(inputs_elm) {
     var that = this;
     inputs_elm.forEach((elm, i) => {
@@ -744,12 +813,11 @@ class Field {
 
   updateDaysInMonth(month: string) {
     let tmp_date = new Date(2019, parseInt(month), 15);
+    let tmp_date = new Date(tmp_date.getFullYear(), tmp_date.getMonth(), 0);
+    this.inputs_elm[this.date_comps_indexes.d].max = tmp_date.getDate();
     if(parseInt(this.inputs_elm[this.date_comps_indexes.d].value) > parseInt(this.inputs_elm[this.date_comps_indexes.d].max)) {
       this.inputs_elm[this.date_comps_indexes.d].value = this.inputs_elm[this.date_comps_indexes.d].max;
-    }
-    let tmp_date = new Date(tmp_date.getFullYear(), tmp_date.getMonth(), 0);
-    console.log(tmp_date.getDate());
-    this.inputs_elm[this.date_comps_indexes.d].max = tmp_date.getDate();  
+    }  
   }
 
   generateDateField(field) {
@@ -773,7 +841,8 @@ class Field {
     this.inputs_elm = []; this.labels_elm = []; this.date_units = [];
     format_arr.forEach((unit: string, index) => {
       let input = document.createElement("input");
-      input.type = "number"; input.min = "1"; input.setAttribute("class", "form form-control");
+      input.type = "number"; input.min = "1"; input.setAttribute("class", "dgui-field-text");
+      input.style.borderColor = that.parent.colorSet.secBrdColor;
       unit = unit.toUpperCase();
       input.setAttribute("placeholder", tr.plcldr(unit));
       if(!this.label) { var label = document.createElement("label") };
@@ -794,7 +863,7 @@ class Field {
           input.value = initMonthValue; input.max = "12";
           label_str = tr.lbl("month"); 
           input.addEventListener("input", (e) => {
-            //that.updateDaysInMonth(e.currentTarget.value);
+            that.updateDaysInMonth(e.currentTarget.value);
           }); break;
         case "DD":
           this.date_comps_indexes.d = index;
@@ -808,7 +877,7 @@ class Field {
       if(this.label) { this.labels_elm.push(label); }
       this.inputs_elm.push(input);
     });
-    console.log(this);
+    that.updateDaysInMonth(this.inputs_elm[this.date_comps_indexes.m].value);
   }
 
   setHtmlAttributs(attributs: Array<{}>) {
@@ -852,7 +921,7 @@ class MDI {
   sections: any;
   options: MDI_options;
   menu_layout: any;
-  parent: FormPannel;
+  parent: Form;
 
   constructor(mdi, parent) {
     for(let attribut in mdi) {
@@ -1040,7 +1109,7 @@ class BlazeTemplate {
   }
 }
 
-/* --------------------------------- Interfaces FormPannel ---------------------------------------------*/
+/* --------------------------------- Interfaces Form ---------------------------------------------*/
 
 interface formPannel_options {
   mode?: "new" | "edit";
@@ -1063,13 +1132,13 @@ interface formPannel_fieldGroup {
   fields: Array<Field>
 }
 
-/* --------------------------------- CLASS FormPannel --------------------------------------------------*/
+/* --------------------------------- CLASS Form --------------------------------------------------*/
 
-class FormPannel {
+class Form {
   name: string;
   id: string;
   type: string
-  parent: modal;
+  parent: Modal;
   title?: string;
   rTitle?: string;
   fields: Array<Field>;
@@ -1527,13 +1596,13 @@ class FormPannel {
         }
       }
     }
-    else if(field.type == "switch" || field.type == "switchGroup") {
+    else if(field.type == "switch" || field.type == "switchGroup" || field.type == "selectMany") {
       // On ne soumet que les champs dont la valeur a été modifiée
       if(field.value != initValue || field.required === true) {
         // Si le champs possède un attribut key il sera renvoyé sous forme d'objet (key: value)
         if(typeof field.key !== "undefined") {
           let objSwitchField = {};
-          objSwitchField[field.key] = (field.type == "switch") ? field.value : parseInt(field.value);
+          objSwitchField[field.key] = (["switch", "selectMany"].includes(field.type)) ? field.value : parseInt(field.value);
           values.push(objSwitchField);
         }
         else {
@@ -1591,9 +1660,9 @@ class FormPannel {
 }
 
 
-export class modal {
+export class Modal {
   background: Translucent;
-  formPannel: FormPannel;
+  formPannel: Form;
   feedback: Function;
 
   constructor(formInitializer, feedback) {
@@ -1601,7 +1670,7 @@ export class modal {
       //this.clean = formInitializer.clean;
       this.feedback = feedback;
       this.background = new Translucent();
-      this.formPannel = new FormPannel(formInitializer, this);
+      this.formPannel = new Form(formInitializer, this);
       this.background.elm.appendChild(this.formPannel.elm);
       document.body.appendChild(this.background.elm);
       this.formPannel.init();
@@ -1637,7 +1706,7 @@ interface contextMenu_field {
   // user
   type?: "switch" | "button" | "context",
   key?: string,
-  group?: string,
+  group?: string | contextMenu_group,
   label: string,
   initValue?: any,
   contextMenu?: contextMenu_init,
@@ -1648,6 +1717,11 @@ interface contextMenu_field {
   elm: HTMLDivElement,
   value: boolean,
   contextMenuObj: ContextMenu | null
+}
+
+interface contextMenu_group {
+  name: string,
+  fields: Array<contextMenu_field>
 }
 
 interface contextMenu_options {
@@ -1676,6 +1750,7 @@ class ContextMenu {
   parent: contextMenu_field;
   target: any;
   options: contextMenu_options;
+  groups: Array<contextMenu_group>;
   fields: Array<contextMenu_field>;
   contextFields: Array<contextMenu_field>;
   selected_items: Array<string>;
@@ -1693,6 +1768,7 @@ class ContextMenu {
     for(let property in contextMenu_init) {
       this[property] = contextMenu_init[property];
     }
+    this.groups = [];
     if(parentAttributes) {
       this.parent = parentAttributes.parent;
       this.target = parentAttributes.target;
@@ -1733,6 +1809,12 @@ class ContextMenu {
     this.elm.addEventListener("mouseout", () => {
       this.mouseover = false;
     });
+    document.addEventListener("keypress", (e) => {
+      console.log("salut");
+      if(e.keyCode == 13) {
+        that.close(true);
+      }
+    });
     if(this.fields) {
       this.fields.forEach((field, index) => {
         /*                                        - Field init attributs -                              */
@@ -1741,7 +1823,16 @@ class ContextMenu {
         }
         else if(field.group) {
           field.type = "switch";
-          field.switchLock = (field.switchLock) ? field.switchLock : true;
+          field.switchLock = (typeof field.switchLock !== "undefined") ? field.switchLock : false;
+          let group_index = -1;
+          that.groups.forEach((group, i) => {
+            if(group.name == field.group) { group_index = i; }
+          });
+          if(group_index === -1) { that.groups.push({name: field.group, fields: []}); }
+          group_index = (group_index !== -1) ? group_index : that.groups.length-1;
+          that.groups[group_index].fields.push(field);
+          field.group = that.groups[group_index];
+          console.log(that);
         }
         else if(!field.type) {
           field.type = "button";
@@ -1787,6 +1878,14 @@ class ContextMenu {
               let index = event.target.dataset.index;
               // main callback
               if(!that.selected_items.includes(that.fields[index].key)) {
+                if(field.group) {
+                  field.group.fields.forEach((field) => {
+                    let f_index = that.selected_items.indexOf(field.key);
+                    if(f_index !== -1) { that.selected_items.splice(f_index, 1) }
+                    field.value = false;
+                    that.changeColor(field.elm, "rgba(124, 110, 127, 0)", "#262626");
+                  });
+                }
                 field.value = true;
                 that.changeColor(event.target, "rgba(93, 78, 109, 0.5)", "white");
                 that.selected_items.push(that.fields[index].key);
@@ -1862,7 +1961,8 @@ class ContextMenu {
     /*                                            - Methods -                                           */
     this.close = function(fireCallback?) {
       document.body.removeEventListener("mousedown", that.event_close);
-      document.body.removeChild(that.elm);
+      console.log(that.elm);
+      if(that.elm) { that.elm.parentNode.removeChild(that.elm); }
       if(fireCallback) {
         callback(that.selected_items);
       }
@@ -1930,7 +2030,7 @@ export function contextMenu(event, contextMenu_init, callback) {
 export function alert(message: string | Error, title?: string, callback?: Function) {
   callback = callback || function(){};
   message = (message instanceof Error) ? message.message : message;
-  new modal({
+  new Modal({
     title: title || tr.title("information"),
     fields: [{type: "message", message: message}],
     footer: [{action: "quit", value: "Ok", BSClass: "btn-success"}]
@@ -1942,7 +2042,7 @@ export function confirm(message: string, callback: Function, title = tr.title("c
     callback = title;
     title = tr.title("confirm");
   }
-  new modal({
+  new Modal({
     title: title,
     fields: [{type: "message", message: message}],
     footer: [
@@ -1954,7 +2054,7 @@ export function confirm(message: string, callback: Function, title = tr.title("c
 }
 
 export function prompt(message: string, callback: any, title:string = tr.title("entry"), options = {maxWidth: 500}) {
-  new modal({
+  new Modal({
     title: title,
     fields: [{type: "message", message: message}, {type: "text"}],
     footer: [
@@ -1966,7 +2066,7 @@ export function prompt(message: string, callback: any, title:string = tr.title("
 }
 
 export function choose(title = tr.title("choice"), message: string, name, radioButtons, callback) {
-  new modal({
+  new Modal({
     title: title,
     fields: [
       {type: "message", message: message},
@@ -1980,11 +2080,11 @@ export function choose(title = tr.title("choice"), message: string, name, radioB
 }
 
 export function modalForm(parameters, callback) {
-  new modal(parameters, callback);
+  new Modal(parameters, callback);
 }
 
 export function ownmodal(htmlElm: any, clean, title="Boîte de modale personnalisée") {
-  new modal({
+  new Modal({
     type: "html",
     title: title,
     elm: htmlElm,

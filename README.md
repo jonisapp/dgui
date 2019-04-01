@@ -157,7 +157,7 @@ html_element.addEventListener("contextmenu", (e) => {
 ## <a name="3"></a> 3. API documentation
 At the moment, the documentation is far to be complete. For more informations, you can refer to the code which I hope is sufficiently readable.
 ### <a name="3_1"></a> 3.1 Fields
-* For now, a field can be of the following types : **message**, **button**, **text**, **number**, **choice**, **switch**, **switchGroup**, **select**, **date**.
+* For now, a field can be of the following types : **message**, **button**, **text**, **number**, **choice**, **switch**, **switchGroup**, **select**, **selectMany**, **date**.
 * If type attribut is not specified, text is set by default.
 
 #### Common attributs to describe fields
@@ -170,8 +170,8 @@ At the moment, the documentation is far to be complete. For more informations, y
 * **htmlAttr** (object>) : Standard **HTML attributs**. Has to be given as an objet ({attr1: val1, att2: val2, ...}) Doesn't apply on types switch and choice
 * **cssAttr** (object) : Standard **CSS attributs**. Has to be given as an objet ({attr1: val1, att2: val2, ...})
 
-#### Select and switchGroup fields specific attribut
-* **list** (Array<string>) : The options of a HTML select element or the labels of switchGroup buttons. By default, the value of the field is set to the index in the list array.
+#### Select, selectMany and switchGroup fields specific attribut
+* **list** (Array<string> | Array<{label: string, value: any}>) : The options of a HTML select element or the labels of switchGroup buttons. By default, the value of the field is set to the index in the list array. If you want the list item to return a predefined value, you can fill the **list** array with objects of structure {label: string, value: any}>.
 
 #### Date field specific attribut
 * **format** (string) : specifies the date format for the field generation. For instance it can take "YYYY.MM.DD", "dd.mm.yyyy" or "DD:MM:YY"... At submission, date field will return  a **ISO-8601** formatted string.
