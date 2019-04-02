@@ -52,7 +52,7 @@ dgui.prompt("May I ask you to indicate your name ?", "Entry", (ans) => {
 
 ### <a name="2_2"></a> 2.2 Easy colors
 ```javascript
-dgui.modalForm({
+dgui.modal({
   title: "My modal form !",
   MDI: {
     sections: [
@@ -76,7 +76,7 @@ dgui.modalForm({
 ![alt "colored modals"](examples/coloredModals.png)
 ### <a name="2_3"></a> 2.3 Modal with MDI
 ```javascript
-dgui.modalForm({
+dgui.modal({
   title: "My modal form !",
   MDI: {
     sections: [

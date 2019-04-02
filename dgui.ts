@@ -260,11 +260,11 @@ class Translucent {
     this.elm.style.justifyContent = "center";
     this.elm.style.alignItems = "center";
     this.elm.style.position = "absolute";
-    this.elm.style.left = 0 + "px";
-    this.elm.style.top = 0 + "px";
-    this.elm.style.width = window.innerWidth + window.scrollX + "px";
-    this.elm.style.height = window.innerHeight + window.scrollY + "px";
-    //this.fadeIn();  active la transition en javascript (ne pas oubllier de désattribuer la classe CSS translucent)
+    this.elm.style.left = 0 + window.scrollX + "px";
+    this.elm.style.top = 0 + window.scrollY + "px";
+    this.elm.style.width = window.innerWidth + "px";
+    this.elm.style.height = window.innerHeight + "px";
+    //this.fadeIn();  active la transition en javascript (ne pas oublier de désattribuer la classe CSS translucent)
     this.elm.addEventListener("selectstart", function(e) {
       e.preventDefault(); return false;
     });
@@ -1163,7 +1163,6 @@ class Form {
 
     if(this.name) {
       dguiUserInterface.dguiObjects[this.name] = this;
-      console.log(dguiUserInterface);
     }
 
     this.parent = parent;
@@ -1522,7 +1521,7 @@ class Form {
         that.errorMessage_elm.style.display = "block";
       }, serverError: function(err) {
         if(err) {
-          modalForm({
+          modal({
             title: tr.title("serverError"),
             fields: [
               {type: "message", message: tr.msg("serverError")},
@@ -1795,7 +1794,9 @@ class ContextMenu {
         this.elm.style.top = event.clientY + window.scrollY + "px"; break;
       case "bottom":
         this.elm.style.left = htmlTargetPosition.left + window.scrollX + "px";
-        this.elm.style.top = htmlTargetPosition.bottom + window.scrollY + "px"; break;
+        this.elm.style.top = htmlTargetPosition.bottom + window.scrollY + "px";
+        this.elm.style.width = htmlTargetPosition.width + "px"; 
+        break;
       case "right":
         this.elm.style.left = htmlTargetPosition.right + window.scrollX + "px";
         this.elm.style.top = htmlTargetPosition.top + window.scrollY + "px"; break;       
@@ -2020,8 +2021,8 @@ class ContextMenu {
   }
 }
 
-export function contextMenu(event, contextMenu_init, callback) {
-  new ContextMenu(event, contextMenu_init, callback);
+export function contextMenu(event, contextMenu_init, callback?) {
+  new ContextMenu(event, contextMenu_init, (callback)? callback : ()=>{} );
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -2079,7 +2080,7 @@ export function choose(title = tr.title("choice"), message: string, name, radioB
   }, callback);
 }
 
-export function modalForm(parameters, callback) {
+export function modal(parameters, callback) {
   new Modal(parameters, callback);
 }
 
