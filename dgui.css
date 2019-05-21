@@ -52,11 +52,13 @@
     width: 100%;
     height: 36px;
     background-color: white;
-    color: #141414;
+    color: #333333;
     font-family: robotoRegular;
     border-radius: 5px;
     border: 1px solid #b7b8b8;
-    padding: 5px;   
+    padding: 5px;
+    overflow: hidden;
+    text-overflow: "...";
 }
 .dgui-field-text:focus {
     box-shadow: 5px 10px;
@@ -75,8 +77,8 @@
 	background-color: #CECECE;
 	text-align: center;
 	height: 36px;
-	color: #323232;
-	cursor: default;
+	color: #333333;
+    cursor: default;
 }
 .dgui-field-switch-selected {
     height: 36px;
@@ -104,7 +106,6 @@
     margin: 5px;
     border-radius: 7px;
     padding: 5px 5px 5px 5px;
-    min-width: 200px;
     text-align: center;
     cursor: default;
     font-family: robotoRegular;
@@ -236,3 +237,4 @@
     animation-name: fadeIn;
     animation-duration: 0.5s;
 }
+  

@@ -59,15 +59,26 @@ export function notEmpty(obj: {} | []) {
     return Object.keys(obj).length !== 0;
   }
   else if(Array.isArray(obj)) {
-    return true;
+    return obj.length !== 0;
   }
   return false;
 }
 
+export function join(objects_arr: Array<{}>) {
+  let single_obj = {};
+  objects_arr.forEach((obj) => {
+    for(let attr in obj) {
+      single_obj[attr] = obj[attr];
+    }
+  });
+  return single_obj;
+}
+
 export function setModifier(path: string, obj1: {}) {
   let obj2 = {};
+  path = (path) ? path + "." : "";
   for(let attr in obj1) {
-    obj2[path + "." + attr] =  obj1[attr];
+    obj2[path + attr] =  obj1[attr];
   }
   return {$set: obj2};
 }
@@ -125,7 +136,8 @@ var translations = {
     YYYY: {en: "YYYY", fr: "AAAA"},
     YY: {en: "YY", fr: "AA"},
     MM: {en: "MM", fr: "MM"},
-    DD: {en: "DD", fr: "JJ"}
+    DD: {en: "DD", fr: "JJ"},
+    selectMany: {en: "Select many...", fr: "Sélectionner plusieurs..."}
   }
 };
 
@@ -359,6 +371,7 @@ interface field_descriptor {
   required: boolean;
   initValue: string | boolean | number | Array<string> | Array<number> | Array<boolean>;
   size: number;
+  placeholder: string;
   action: any;
   condition: boolean | field_condition;
   BSClass: string;
@@ -397,6 +410,7 @@ class Field {
   label: string;
   required: boolean;
   value: string | boolean | number | Array<{}>;
+  placeholder: string;
   size: number;
   list: Array<string> | Array<Object>;
   action: any;
@@ -435,6 +449,7 @@ class Field {
     if(field.group) {
       field.type = "switch";
     }
+    this.exclude = (field.exclude) ? field.exclude : false;
     this.conditionalFields = [];
     /*                                            - init according to type -                            */
     switch(field.type) {
@@ -449,8 +464,12 @@ class Field {
           that.generateSwitch(input_elm, switchLabel);
           that.inputs_elm.push(input_elm);
         });
+        console.log(this.initValue);
         this.inputs_elm[this.initValue].setAttribute("class", "dgui-field-switch-selected");
         this.inputs_elm[this.initValue].style.backgroundColor = "#696969";
+        this.inputs_elm[0].style.borderTopLeftRadius = "18px"; this.inputs_elm[0].style.borderBottomLeftRadius = "18px";
+        this.inputs_elm[this.inputs_elm.length-1].style.borderTopRightRadius = "18px";
+        this.inputs_elm[this.inputs_elm.length-1].style.borderBottomRightRadius = "18px";
         this.inputs_elm.forEach((input_elm, i) => {
           input_elm.addEventListener("click", (e) => {
             that.inputs_elm.forEach((ie) => {
@@ -549,6 +568,7 @@ class Field {
       case "selectMany":
         this.generateSelectManyField(field); break;
       case "select":
+        this.value = parseInt(this.initValue);
         this.initLabel(field);
         if(this.list) {
           this.input_elm = document.createElement("select");
@@ -661,7 +681,7 @@ class Field {
       this.inputs_elm.forEach((input_elm) => {
         let elm = document.createElement("div");
         elm.setAttribute("class", "dgui-form-pannel-element");
-        elm.setAttribute("style", "flex: 1; padding-left: 5px; padding-right: 5px");
+        elm.setAttribute("style", "flex: 1; padding-left: 2px; padding-right: 2px");
         elm.appendChild(input_elm);
         hLayout_elm.appendChild(elm);
       });
@@ -697,6 +717,7 @@ class Field {
     this.condition.action = (Array.isArray(this.condition.action)) ? this.condition.action : [this.condition.action];
     this.condition.hasValue = (this.condition.hasValue) ? this.condition.hasValue : 0;
     if(Array.isArray(this.condition.hasValue)) {
+      console.log(this.condition.hasValue);
       this.elm.style.display = (this.condition.hasValue.includes(targetField.input_elm.value)) ? "block" : "none";
     }
     else {
@@ -704,6 +725,7 @@ class Field {
       var value1 = (this.condition.hasValue) ? this.condition.hasValue : "0";
       var value2 = (targetField.value) ? targetField.value : "0";
       console.log(targetField);
+      // ---------------------------- operator hasChanged
       if(operator == "hasChanged") {
         if((targetField.type == "switch" || targetField.type == "date") && targetField.initValue != targetField.value) {
           fulfilled = true;
@@ -712,6 +734,7 @@ class Field {
           fulfilled = true;
         }
       }
+      // ---------------------------- other operators
       else if(eval(value1 + operator + value2)) {
         fulfilled = true;
       }
@@ -751,13 +774,15 @@ class Field {
         selected_items = selected_items + that.list[val].label + ", ";
       });
     }
-    this.input_elm.textContent = selected_items.slice(0, -2);
+    if(typeof this.action !== "undefined") { this.action(this.value); }
+    this.input_elm.innerHTML = (this.value.length !== 0) ? selected_items.slice(0, -2) : "<span style='color: #7f7f7f'>" + this.placeholder + "</span>";
   }
 
   generateSelectManyField(field) {
     var that = this;
     var init_indexes = [];
     this.value = field.initValue;
+    this.placeholder = (field.placeholder) ? field.placeholder : tr.plcldr("selectMany");
     if(typeof this.list[0] === "string") {
       field.list.forEach((item, i) => {
         if(that.initValue.includes(i)) {
@@ -908,6 +933,7 @@ interface MDI_options {
   containerHeight?: number;
   menuItemWidth?: number;
   menuLayout?: string;
+  initSection?: number;
   shape?: "rounded" | "squared";
 }
 
@@ -931,6 +957,7 @@ class MDI {
     if(!this.options) { this.options = {}; }
     if(!this.options.menuLayout) { this.options.menuLayout = "horizontal";  }
     if(!this.options.shape) { this.options.shape = this.parent.options.shape; }
+    this.options.initSection = (this.options.initSection) ? this.options.initSection : 0;
     // génération du menu et du container
     if(typeof this.sections !== "undefined") {
       this.elm = document.createElement("div");
@@ -969,7 +996,7 @@ class MDI {
       this.container_elm.style.backgroundColor = this.parent.colorSet.secColor;
       this.container_elm.style.borderColor = this.parent.colorSet.secBrdColor;
       // génération des sections
-      this.lastSelectedElmIndex=0;
+      this.lastSelectedElmIndex = this.options.initSection;
       for(var i=0; i < this.sections.length; ++i) {
         if(typeof this.sections[i].condition === "undefined" || (typeof this.sections[i].condition !== "undefined" && this.sections[i].condition === true)) {
           this.sections[i].tabElm = document.createElement("div");
@@ -1015,10 +1042,15 @@ class MDI {
               }
             });
           })(i, this);
+          this.sections[i].options = (this.sections[i].options) ? this.sections[i].options : {};
           this.sections[i].elm = document.createElement("div");
           this.sections[i].elm.id = parent.id + "_section" + i.toString();
           this.sections[i].elm.setAttribute("class", "form-pannel-vertical-layout");
           this.sections[i].elm.setAttribute("style", "display: none;");
+          if(this.sections[i].template) {
+            this.sections[i].template = new BlazeTemplate(this.sections[i].template, this.sections[i]);
+            this.sections[i].elm.appendChild(this.sections[i].template.elm);
+          }
           if(typeof this.sections[i].fields !== "undefined") {
             let scrollElm = document.createElement("div");
             scrollElm.style.height = this.options.containerHeight-60+"px";
@@ -1043,9 +1075,17 @@ class MDI {
       this.elm.appendChild(this.menu_elm);
       this.elm.appendChild(this.container_elm);
       // initialisation du MDI
-      this.initTab(this.sections[0].tabElm);
-      this.initSection(this.sections[0].elm);
+      this.initTab(this.sections[this.options.initSection].tabElm);
+      this.initSection(this.sections[this.options.initSection].elm);
     }
+    var that = this;
+    this.sections.forEach((section) => {
+      section.fields.forEach((field) => {
+        console.log(that.parent);
+        that.parent.fields.push(field);
+      });
+    });
+    console.log(this);
   }
 
   setTabStyle(tab, style) {
@@ -1085,14 +1125,24 @@ export const get = function(interfaceObj_str: string) {
 
 class BlazeTemplate {
   elm: any;
+  parent: Form;
   private template: any;
   private blazeInstance: any;
+  private templateWidth: number;
+  private templateHeight: number;
 
-  constructor(template) {
+  constructor(template, parent) {
     this.template = template;
+    this.parent = parent;
     this.elm = document.createElement("div");
     this.render();
-    this.elm.setAttribute("style", "width: 1110px; height: 550px;");
+    ["templateWidth", "templateHeight"].forEach((attr) => {
+      if(typeof parent.options[attr] !== "undefined") {
+        this[attr] = parent.options[attr];
+      }
+    });
+    if(this.templateWidth) { this.elm.style.width = this.templateWidth + "px"; }
+    if(this.templateHeight) { this.elm.style.height = this.templateHeight + "px"; }
   }
 
   render() {
@@ -1145,6 +1195,7 @@ class Form {
   footer: Array<button>;
   options: formPannel_options;
   // user & controller
+  loader_elm: HTMLImageElement;
   errorMessage_elm: any;
   MDI: MDI;
   template: BlazeTemplate;
@@ -1182,6 +1233,8 @@ class Form {
         this.title = this.rTitle;
       }
     }
+    this.fields = [];
+
     if(!this.options.shape) {this.options.shape = "rounded";}
     if(!this.options.color) {this.options.color = "#D3D3D3";}
     this.colorSet = new ColorSet(this.options.color);
@@ -1202,10 +1255,9 @@ class Form {
     let scrollElm = document.createElement("div");
     //scrollElm.style.height = this.options.containerHeight-60+"px";
     scrollElm.style.overflow = "auto";
-    let fields = this.fields;
-    this.fields = [];
+    let fields = properties.fields;
     this.generateFields(that, fields, scrollElm);
-    this.initConditionalFields();
+    this.initConditionalFields(this);
     this.elm.appendChild(scrollElm);
 
     this.initDisplay();
@@ -1216,7 +1268,11 @@ class Form {
     setDefaultCursor(formPannelTitle);
     formPannelTitle.setAttribute("style", "display: inline-block; margin-top: 3px; font-size: 18px; font-weight: bold; color: rgba(0, 0, 0, 0.8);");
     formPannelTitle.textContent = this.title;
+    this.loader_elm = document.createElement("img");
+    this.loader_elm.setAttribute("src", "/icons/loader.svg");
+    this.loader_elm.setAttribute("style", "display: none; margin-left: 10px; height: 21px;");
     formPannelHeader.appendChild(formPannelTitle);
+    formPannelHeader.appendChild(this.loader_elm);
     let close_button_elm = document.createElement("div");
     close_button_elm.setAttribute("class", "dgui-modal-close");
     close_button_elm.setAttribute("style", "color: " + this.colorSet.fontColor);
@@ -1238,7 +1294,7 @@ class Form {
       formPannelBody.appendChild(this.MDI.elm);
     }
     if(this.template) {
-      this.template = new BlazeTemplate(this.template);
+      this.template = new BlazeTemplate(this.template, this);
       formPannelBody.appendChild(this.template.elm);
     }
     formPannelBody.setAttribute("style", "padding: 10px; border-radius: 7px; text-align: center;");
@@ -1274,6 +1330,7 @@ class Form {
     formPannelBody.appendChild(this.footer_elm);
     this.elm.appendChild(formPannelHeader);
     this.elm.appendChild(formPannelBody);
+    console.log(this);
   }
 
   generateFields(fieldsContainer, fields, scrollElm) {
@@ -1293,26 +1350,6 @@ class Form {
           field_s_descriptor.forEach(function(field) {
             if(field.label) { ++label_count; }
             field = that.generateField(fieldsContainer, field);
-            // Groups
-            if(field.group) {
-              var group_index= -1;
-              that.groups.forEach((group, i) => {
-                if(group.name == field.group) {
-                  group_index = i;
-                }
-              });
-              if(group_index != -1) {
-                that.groups[group_index].fields.push(field);
-              }
-              else {
-                that.groups.push({name: field.group, fields: []});
-                that.groups.forEach((group) => {
-                  if(group.name == field.group) {
-                    group.fields.push(field);
-                  }
-                })
-              }
-            }
             fields_inputs.push({input: field.input_elm, max: (field.max) ? field.max : null});
             if(reduce_padding) {
               field.elm.style.paddingLeft = 5+"px";
@@ -1352,8 +1389,32 @@ class Form {
     }
   }
 
+  fieldGroup(field) {
+    if(field.group) {
+      var group_index= -1;
+      this.groups.forEach((group, i) => {
+        if(group.name == field.group) {
+          group_index = i;
+        }
+      });
+      if(group_index != -1) {
+        this.groups[group_index].fields.push(field);
+      }
+      else {
+        this.groups.push({name: field.group, fields: []});
+        this.groups.forEach((group) => {
+          if(group.name == field.group) {
+            group.fields.push(field);
+          }
+        })
+      }
+    }
+  }
+
   generateField(fieldsContainer, field_descriptor) {
     let field = new Field(field_descriptor, this);
+    // group
+    this.fieldGroup(field);
     // conditionnal field
     if(typeof field.condition !== "undefined") {
       if(typeof field.condition === "boolean") {
@@ -1369,9 +1430,9 @@ class Form {
     return field;
   }
 
-  initConditionalFields() {
-    this.conditionalFields.forEach((conditionalField) => {
-      this.fields.forEach((field) => {
+  initConditionalFields(fieldsContainer) {
+    fieldsContainer.conditionalFields.forEach((conditionalField) => {
+      fieldsContainer.fields.forEach((field) => {
         if(field.key == conditionalField.condition.key) {
           conditionalField.check_condition(field);
           if(!["date", "switch", "switchGroup"].includes(field.type)) {
@@ -1463,13 +1524,13 @@ class Form {
   }
 
   quit() {
-    if(this.template) {
-      this.template.remove();
-    }
+    if(this.template) { this.template.remove(); }
     this.parent.quit();
   }
 
   submit() {
+    //animation
+    this.loader_elm.style.display = "inline";
     var that = this;
     let values = [];
     if(this.fields) {
@@ -1509,7 +1570,7 @@ class Form {
           promises.push(section.promise);
         }
       });
-      Promise.all(promises).then(() => {that.quit();}).catch((err) => { that.errorMessage(err.message); });
+      Promise.all(promises).then(() => {that.quit();}).catch((err) => { that.errorMessage(err.message); this.loader_elm.style.display = "none"; });
     }
     let proper_values = this.properType(values);
     if(Object.keys(proper_values).length !== 0) {
@@ -1517,6 +1578,7 @@ class Form {
       this.parent.submit({value: proper_values, end: function() {
         that.parent.quit();
       }, errorMessage: function(message) {
+        that.loader_elm.style.display = "none";
         that.errorMessage_elm.textContent = message;
         that.errorMessage_elm.style.display = "block";
       }, serverError: function(err) {
@@ -1597,7 +1659,7 @@ class Form {
     }
     else if(field.type == "switch" || field.type == "switchGroup" || field.type == "selectMany") {
       // On ne soumet que les champs dont la valeur a été modifiée
-      if(field.value != initValue || field.required === true) {
+      if((field.value != initValue || field.required === true) && !field.exclude) {
         // Si le champs possède un attribut key il sera renvoyé sous forme d'objet (key: value)
         if(typeof field.key !== "undefined") {
           let objSwitchField = {};
@@ -1845,6 +1907,7 @@ class ContextMenu {
         }
         field.elm.setAttribute("data-index", index.toString());
         field.elm.setAttribute("class", "dgui-contextMenu-item");
+        if(event.type == "contextmenu") { field.elm.style.minWidth = "200px"; }
         if(field.type != "context") {
           field.elm.textContent = field.label;
         }
