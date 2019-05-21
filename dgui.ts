@@ -365,7 +365,7 @@ class Button {
 /* --------------------------------- Interfaces Field --------------------------------------------------*/
 
 interface field_descriptor {
-  type: "message" | "button" | "text" | "number" | "choice" | "switch" | "switchGroup" | "select" | "selectMany" | "date";
+  type: "message" | "button" | "text" | "number" | "choice" | "switch" | "switchGroup" | "select" | "selectMany" | "date" | "duration";
   key: string;
   label: string;
   required: boolean;
@@ -404,7 +404,7 @@ class Field {
 
   /*                                              - Définition -                                        */
   // user
-  type: "message" | "button" | "text" | "number" | "choice" | "switch" | "switchGroup" | "select" | "selectMany" | "date";
+  type: "message" | "button" | "text" | "number" | "choice" | "switch" | "switchGroup" | "select" | "selectMany" | "date" | "duration";
   key: string;
   name: string;
   label: string;
@@ -451,6 +451,11 @@ class Field {
     }
     this.exclude = (field.exclude) ? field.exclude : false;
     this.conditionalFields = [];
+    if(this.parent.options.initValues) {
+      for(let key in this.parent.options.initValues) {
+        if(key == this.key) { this.initValue = this.parent.options.initValues[key]; }
+      }
+    }
     /*                                            - init according to type -                            */
     switch(field.type) {
       case "switchGroup":
@@ -464,7 +469,6 @@ class Field {
           that.generateSwitch(input_elm, switchLabel);
           that.inputs_elm.push(input_elm);
         });
-        console.log(this.initValue);
         this.inputs_elm[this.initValue].setAttribute("class", "dgui-field-switch-selected");
         this.inputs_elm[this.initValue].style.backgroundColor = "#696969";
         this.inputs_elm[0].style.borderTopLeftRadius = "18px"; this.inputs_elm[0].style.borderBottomLeftRadius = "18px";
@@ -510,15 +514,15 @@ class Field {
             elm.setAttribute("class", "dgui-field-switch-selected");
             elm.style.backgroundColor = "#696969";
             that.value = true;
-            that.conditionalFields.forEach((cf) => {
-              cf.check_condition(that);
-            });
           }
           else {
             elm.setAttribute("class", "dgui-field-switch");
             elm.style.backgroundColor = that.parent.colorSet.secColor;
             that.value = false;
           }
+          that.conditionalFields.forEach((cf) => {
+            cf.check_condition(that);
+          });
           // action
           if(typeof that.action !== "undefined") {
             if(typeof that.action === "function") {
@@ -541,6 +545,39 @@ class Field {
       case "date":
         this.required = true;
         this.generateDateField(field); break;
+      case "duration":
+        this.inputs_elm = [];
+        this.initLabel(field);
+        this.label_elm.style.marginTop = "0px";
+        this.input_elm = document.createElement("input");
+        this.input_elm.setAttribute("type", "hidden");
+        this.input_elm.value = (this.initValue) ? this.initValue : "";
+        if(typeof this.initValue !== "undefined") {
+         var duration_arr = this.initValue.split(":");
+         duration_arr.forEach((val) => {
+          val = parseInt(val);
+         });
+        }
+        [{max: "100"}, {max: "59"}].forEach((input_attr, i) => {
+          let input_hh = document.createElement("input");
+          input_hh.type = "number"; input_hh.min = "0"; input_hh.setAttribute("class", "dgui-field-text");
+          input_hh.style.marginTop = "-2px"; //////////////////////////////temporaire pour ajuster la hauteur quand plusieurs champs horizontalement
+          input_hh.style.borderColor = that.parent.colorSet.secBrdColor;
+          input_hh.setAttribute("step", "01");
+          input_hh.setAttribute("max", input_attr.max);
+          input_hh.value = "0";
+          if(typeof duration_arr !== "undefined") {
+            input_hh.value = duration_arr[i];
+          }
+          input_hh.addEventListener("input", (e) => {
+            let hh = (that.inputs_elm[0].value.length == 1) ? "0" + that.inputs_elm[0].value : that.inputs_elm[0].value;
+            let mm = (that.inputs_elm[1].value.length == 1) ? "0" + that.inputs_elm[1].value : that.inputs_elm[1].value;
+            console.log(hh+":"+mm);
+            that.input_elm.value = hh + ":" + mm;
+          });
+          this.inputs_elm.push(input_hh);
+        });
+        break;
       case "text": case "password": case "number":
         this.initLabel(field);
         this.input_elm = document.createElement("input");
@@ -608,10 +645,10 @@ class Field {
     if(field.cssAttr) { this.setCSSAttributs(field.cssAttr); }
     if(field.type == "number") {
       this.input_elm.setAttribute("type", "number");
-      this.input_elm.setAttribute("step", "1");
+      this.input_elm.setAttribute("step", (field.step) ? field.step : 1);
       this.input_elm.setAttribute("min", "0");
       if(!this.initValue) {
-        this.input_elm.value = "1";
+        this.input_elm.value = "0";
       }
     }
     if(typeof field.initValue !== "undefined" && field.type != "switchGroup") {
@@ -626,7 +663,7 @@ class Field {
       this.elm.setAttribute("class", (this.label) ? "dgui-vertical-layout" : "dgui-form-pannel-layout");
       this.elm.setAttribute("style", "padding-left: 15px; padding-right: 15px;");
     }
-    else if(field.type == "date") {
+    else if(field.type == "date" || field.type == "duration") {
       this.elm.setAttribute("class", (this.label) ? "dgui-vertical-layout" : "dgui-form-pannel-layout");
     }
     else {
@@ -676,7 +713,7 @@ class Field {
       if(this.label) { this.elm.appendChild(this.label_elm); this.elm.appendChild(hLayout_elm); }
       this.elm.style.paddingLeft = "15px"; this.elm.style.paddingRight = "15px";
     }
-    else if(field.type == "switchGroup") {
+    else if(field.type == "switchGroup" || field.type == "duration") {
       let hLayout_elm = document.createElement("div"); hLayout_elm.setAttribute("class", "dgui-form-pannel-layout");
       this.inputs_elm.forEach((input_elm) => {
         let elm = document.createElement("div");
@@ -685,9 +722,21 @@ class Field {
         elm.appendChild(input_elm);
         hLayout_elm.appendChild(elm);
       });
-      if(this.label) { let label_elm = document.createElement("label"); label_elm.textContent = this.label; label_elm.setAttribute("style", "margin-bottom: 0px; margin-top: 10px; margin-left: 5px;"); this.elm.appendChild(label_elm); }
+      if(this.label) { let label_elm = document.createElement("label"); label_elm.textContent = this.label; label_elm.setAttribute("style", "margin-bottom: 0px; margin-top: 0px; margin-left: 5px;"); this.elm.appendChild(label_elm); }
       this.elm.appendChild(hLayout_elm);
     }
+    // else if(field.type == "duration") {
+    //   let hLayout_elm = document.createElement("div"); hLayout_elm.setAttribute("class", "dgui-form-pannel-layout");
+    //   this.inputs_elm.forEach((input_elm) => {
+    //     let elm = document.createElement("div");
+    //     elm.setAttribute("class", "dgui-form-pannel-element");
+    //     elm.setAttribute("style", "flex: 1; padding-left: 2px; padding-right: 2px");
+    //     elm.appendChild(input_elm);
+    //     hLayout_elm.appendChild(elm);
+    //   });
+    //   if(this.label) { let label_elm = document.createElement("label"); label_elm.textContent = this.label; label_elm.setAttribute("style", "margin-bottom: 0px; margin-top: 10px; margin-left: 5px;"); this.elm.appendChild(label_elm); }
+    //   this.elm.appendChild(hLayout_elm);
+    //}
     else {
       this.elm.appendChild(this.input_elm);
     }
@@ -704,6 +753,9 @@ class Field {
   generateSwitch(input_elm, label) {
     input_elm.setAttribute("class", "dgui-field-switch");
     input_elm.setAttribute("style", "display: flex; justify-content: center; align-items: center; margin-top: 0px");
+    if(this.display == "noLabel") {
+      input_elm.style.marginTop = "32px";
+    }
     input_elm.style.backgroundColor = this.parent.colorSet.secColor;
     let text_elm = document.createElement("div");
     text_elm.textContent = label;
@@ -711,20 +763,19 @@ class Field {
   }
 
   check_condition(targetField: Field) {
+    console.log(this);
     var that = this;
     let operator = (this.condition.operator) ? this.condition.operator : "==";
     this.condition.action = (this.condition.action) ? this.condition.action : ["show"];
     this.condition.action = (Array.isArray(this.condition.action)) ? this.condition.action : [this.condition.action];
     this.condition.hasValue = (this.condition.hasValue) ? this.condition.hasValue : 0;
     if(Array.isArray(this.condition.hasValue)) {
-      console.log(this.condition.hasValue);
       this.elm.style.display = (this.condition.hasValue.includes(targetField.input_elm.value)) ? "block" : "none";
     }
     else {
       let fulfilled = false;
       var value1 = (this.condition.hasValue) ? this.condition.hasValue : "0";
       var value2 = (targetField.value) ? targetField.value : "0";
-      console.log(targetField);
       // ---------------------------- operator hasChanged
       if(operator == "hasChanged") {
         if((targetField.type == "switch" || targetField.type == "date") && targetField.initValue != targetField.value) {
@@ -867,6 +918,7 @@ class Field {
     format_arr.forEach((unit: string, index) => {
       let input = document.createElement("input");
       input.type = "number"; input.min = "1"; input.setAttribute("class", "dgui-field-text");
+      input.style.marginTop = "-2px"; //////////////////////////////temporaire pour ajuster la hauteur quand plusieurs champs horizontalement
       input.style.borderColor = that.parent.colorSet.secBrdColor;
       unit = unit.toUpperCase();
       input.setAttribute("placeholder", tr.plcldr(unit));
@@ -877,10 +929,10 @@ class Field {
         case "YYYY": case "YY":
           this.date_comps_indexes.y = index;
           if(unit == "YYYY") {
-            input.value = initYearValue; input.min = today.getFullYear().toString();
+            input.value = initYearValue; input.min = "1900";
           }
           else if(unit == "YY") {
-            input.value = initYearValue.substr(2,2); input.min = input.value;
+            input.value = initYearValue.substr(2,2); input.min = "1900";
           }
           label_str = tr.lbl("year"); break;
         case "MM":
@@ -1137,8 +1189,10 @@ class BlazeTemplate {
     this.elm = document.createElement("div");
     this.render();
     ["templateWidth", "templateHeight"].forEach((attr) => {
-      if(typeof parent.options[attr] !== "undefined") {
-        this[attr] = parent.options[attr];
+      if(typeof parent.options !== "undefined") {
+        if(typeof parent.options[attr] !== "undefined") {
+          this[attr] = parent.options[attr];
+        }
       }
     });
     if(this.templateWidth) { this.elm.style.width = this.templateWidth + "px"; }
@@ -1273,16 +1327,23 @@ class Form {
     this.loader_elm.setAttribute("style", "display: none; margin-left: 10px; height: 21px;");
     formPannelHeader.appendChild(formPannelTitle);
     formPannelHeader.appendChild(this.loader_elm);
-    let close_button_elm = document.createElement("div");
-    close_button_elm.setAttribute("class", "dgui-modal-close");
-    close_button_elm.setAttribute("style", "color: " + this.colorSet.fontColor);
-    close_button_elm.addEventListener("click", () => {
-      that.quit();
-    })
-    let close_svg_elm = document.createElement("i");
-    close_svg_elm.setAttribute("class", "fas fa-times");
-    close_button_elm.appendChild(close_svg_elm);
-    formPannelHeader.appendChild(close_button_elm);
+    if(this.parent instanceof Modal) {
+      let close_button_elm = document.createElement("div");
+      close_button_elm.setAttribute("class", "dgui-modal-close");
+      close_button_elm.setAttribute("style", "color: " + this.colorSet.fontColor);
+      close_button_elm.addEventListener("click", () => {
+        that.quit();
+      });
+      let close_svg_elm = document.createElement("i");
+      close_svg_elm.setAttribute("class", "fas fa-times");
+      close_button_elm.appendChild(close_svg_elm);
+      formPannelHeader.appendChild(close_button_elm);
+    }
+    else {
+      if(this.toHide) {
+        this.toHide.style.display = "none";
+      }
+    }
     var formPannelBody = document.createElement("div");
     this.errorMessage_elm = document.createElement("div");
     this.errorMessage_elm.setAttribute("style", "display: none; background-color: #e26c6c; color: white; border-radius: 3px; font-weight: normal; margin: 5px;padding: 5px;");
@@ -1525,6 +1586,7 @@ class Form {
 
   quit() {
     if(this.template) { this.template.remove(); }
+    if(this.toHide) { this.toHide.style.display = "block"; }
     this.parent.quit();
   }
 
@@ -1574,7 +1636,6 @@ class Form {
     }
     let proper_values = this.properType(values);
     if(Object.keys(proper_values).length !== 0) {
-      console.log(that);
       this.parent.submit({value: proper_values, end: function() {
         that.parent.quit();
       }, errorMessage: function(message) {
@@ -1640,21 +1701,10 @@ class Form {
 
   submitField(field, values) {
     let initValue = (typeof field.initValue !== "undefined") ? field.initValue : "";
-    if(["text", "password", "number", "select", "date"].includes(field.type)) {
-      // On ne soumet que les champs dont la valeur a été modifiée
+    if(["text", "password", "number", "select", "date", "duration"].includes(field.type)) {
+      // On ne soumet que les champs dont la valeur a été modifiée où qui sont "requis"
       if(field.input_elm.value != initValue || field.required === true) {
-        // Si le champs possède un attribut key il sera renvoyé sous forme d'objet (key: value)
-        if(typeof field.key !== "undefined") {
-          let objTextField = {};
-          objTextField[field.key] = field.input_elm.value;
-          if(field.type == "select" || field.type == "number") {
-            objTextField[field.key] = parseInt(field.input_elm.value);
-          }
-          values.push(objTextField);
-        }
-        else {
-          values.push(field.input_elm.value);
-        }
+        values.push(this.getKeyValue(field));
       }
     }
     else if(field.type == "switch" || field.type == "switchGroup" || field.type == "selectMany") {
@@ -1687,6 +1737,29 @@ class Form {
     }
   }
 
+  getKeyValue(field) {
+    if(typeof field.key !== "undefined") {
+      let objTextField = {};
+      if(field.type == "select" && typeof field.list[0] !== "string") {
+        console.log(field.value);
+        objTextField[field.key] = field.value;
+      }
+      else if(field.type == "number" && field.step < 1) {
+        objTextField[field.key] = parseFloat(field.input_elm.value);
+      }
+      else if(field.type == "select" || field.type == "number") {
+        objTextField[field.key] = parseInt(field.input_elm.value);
+      }
+      else {
+        objTextField[field.key] = field.input_elm.value;
+      }
+      return objTextField;
+    }
+    else {
+      return field.input_elm.value;
+    }
+  }
+
   properType(values) {
     // Si le formulaire ne possède qu'un seul champs, on renvoie une valeur unique plutôt qu'un tableau.
     if(values.length == 1) {
@@ -1707,11 +1780,11 @@ class Form {
   }
 
   confirm() {
-    this.parent.confirm();
+    if(this.parent instanceof Modal) this.parent.confirm();
   }
 
   abort() {
-    this.parent.abort();
+    if(this.parent instanceof Modal) this.parent.abort();
   }
 
   errorMessage(message) {
@@ -2089,6 +2162,55 @@ export function contextMenu(event, contextMenu_init, callback?) {
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////// Pannel dGUI /////////////////////////////////////////////////////////
+
+/* --------------------------------- Interfaces Pannel -------------------------------------------------*/
+
+interface PannelProps {
+  template: any;
+}
+
+/* --------------------------------- CLASS Pannel ------------------------------------------------------*/
+
+class Pannel {
+  private template: any;
+  private elm: any;
+  private closeHandler: any;
+  constructor(event, pannelProps: PannelProps) {
+    var that = this;
+    Object.keys(pannelProps).forEach((key) => {
+      this[key] = pannelProps[key];
+    });
+    var htmlTargetPosition = event.currentTarget.getBoundingClientRect();
+    this.elm = document.createElement("div");
+    this.elm.setAttribute("data-type", "dgui_pannel")
+    this.elm.setAttribute("style", "position: absolute;");
+
+    if(this.template) {
+      this.template = new BlazeTemplate(this.template, this);
+      this.elm.appendChild(this.template.elm);
+    }
+
+    this.closeHandler = function(e) {
+      e.stopPropagation();
+      if(!elementBelongsToDataType(e.target, "dgui_pannel")) {
+        that.close();
+      }
+    }
+    document.body.addEventListener("click", this.closeHandler);
+
+    document.body.appendChild(this.elm);
+    this.elm.style.top = htmlTargetPosition.top + htmlTargetPosition.height + 10 + window.scrollY + "px";
+    this.elm.style.left = htmlTargetPosition.left + window.scrollX + "px";
+  }
+
+  close() {
+    document.body.removeEventListener("click", this.closeHandler);
+    this.elm.parentNode.removeChild(this.elm);
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////// Common dialogbox dGUI ///////////////////////////////////////////////
 
 export function alert(message: string | Error, title?: string, callback?: Function) {
@@ -2154,4 +2276,27 @@ export function ownmodal(htmlElm: any, clean, title="Boîte de modale personnali
     elm: htmlElm,
     clean: clean
   }, function(){});
+}
+
+class FormBlock {
+  constructor(parent: any, formInitializer: formPannel_options, callback) {
+    this.feedback = callback;
+    this.quit = function() {
+      parent.removeChild(this.form.elm);
+    };
+    this.abort = this.quit;
+    this.submit = function(form) {
+      this.feedback(form);
+    };
+    this.form = new Form(formInitializer, this);
+    parent.appendChild(this.form.elm);
+  }
+}
+
+export function form(parent: any, formInitializer: formPannel_options, callback) {
+  let formBlock = new FormBlock(parent, formInitializer, callback);
+}
+
+export function pannel(event, pannelProps) {
+  let pannel = new Pannel(event, pannelProps);
 }
