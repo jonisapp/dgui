@@ -6,7 +6,7 @@ export class FieldDuration extends AbstractField {
 
   constructor(attr, parent) {
     super(attr, parent);
-    var _this = this;
+    var that = this;
     this.inputs_elm = [];
     this.initLabel();
     this.label_elm.style.marginTop = "0px";
@@ -23,7 +23,7 @@ export class FieldDuration extends AbstractField {
       let input_hh = document.createElement("input");
       input_hh.type = "number"; input_hh.min = "0"; input_hh.setAttribute("class", "dgui-field-text");
       input_hh.style.marginTop = "-2px"; //////////////////////////////temporaire pour ajuster la hauteur quand plusieurs champs horizontalement
-      input_hh.style.borderColor = _this.parent.colorSet.secBrdColor;
+      input_hh.style.borderColor = that.parent.colorSet.secBrdColor;
       input_hh.setAttribute("step", "01");
       input_hh.setAttribute("max", input_attr.max);
       input_hh.value = "0";
@@ -31,9 +31,9 @@ export class FieldDuration extends AbstractField {
         input_hh.value = duration_arr[i];
       }
       input_hh.addEventListener("input", (e) => {
-        let hh = (_this.inputs_elm[0].value.length == 1) ? "0" + _this.inputs_elm[0].value : _this.inputs_elm[0].value;
-        let mm = (_this.inputs_elm[1].value.length == 1) ? "0" + _this.inputs_elm[1].value : _this.inputs_elm[1].value;
-        _this.input_elm.value = hh + ":" + mm;
+        let hh = (that.inputs_elm[0].value.length == 1) ? "0" + that.inputs_elm[0].value : that.inputs_elm[0].value;
+        let mm = (that.inputs_elm[1].value.length == 1) ? "0" + that.inputs_elm[1].value : that.inputs_elm[1].value;
+        that.input_elm.value = hh + ":" + mm;
       });
       this.inputs_elm.push(input_hh);
     });

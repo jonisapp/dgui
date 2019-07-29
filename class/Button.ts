@@ -1,3 +1,5 @@
+import { Form } from './Form';
+
 export class Button {
   elm: HTMLElement;
   parent: Form;

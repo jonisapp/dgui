@@ -1,3 +1,6 @@
+import { Form } from './Form';
+import { BlazeTemplate } from './BlazeTemplate';
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////// MDIs dGUI ///////////////////////////////////////////////////////////
 
@@ -182,12 +185,4 @@ export class MDI {
   initSection(sectionElm) {
     sectionElm.style.display = "block";
   }
-}
-
-var dguiUserInterface = {
-  dguiObjects: {}
-}
-
-export const get = function(interfaceObj_str: string) {
-  return (dguiUserInterface.dguiObjects[interfaceObj_str]) ? dguiUserInterface.dguiObjects[interfaceObj_str] : false;
 }

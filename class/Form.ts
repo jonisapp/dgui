@@ -1,4 +1,5 @@
 import { tr } from '../translations';
+import { dguiUserInterface } from '../state';
 
 import { setDefaultCursor } from '../utility';
 
@@ -6,6 +7,7 @@ import { Modal } from './Modal';
 import { ColorSet } from './Colorset';
 import { Button } from './Button';
 import { MDI } from './MDI';
+import { BlazeTemplate } from './BlazeTemplate';
 
 import { AbstractField } from './fields/AbstractField';
 import { InputField } from './fields/InputField';
@@ -13,6 +15,7 @@ import { FieldText } from './fields/FieldText';
 import { FieldNumber } from './fields/FieldNumber';
 import { FieldDate } from './fields/FieldDate';
 import { FieldDuration } from './fields/FieldDuration';
+import { FieldSelect } from './fields/FieldSelect';
 
 /* --------------------------------- Interfaces Form ---------------------------------------------*/
 
@@ -304,6 +307,7 @@ export class Form {
       fieldsContainer.fields.forEach((field) => {
         if(field.key == conditionalField.condition.key) {
           conditionalField.check_condition(field);
+          let arr = new Array("date", "switch", "switchGroup");
           if(!["date", "switch", "switchGroup"].includes(field.type)) {
             field.input_elm.addEventListener("input", (e) => {
               conditionalField.check_condition(field);
@@ -644,7 +648,6 @@ class Field extends AbstractField {
       field.type = "switch";
     }
     this.exclude = (field.exclude) ? field.exclude : false;
-    console.log(field.type);
     this.conditionalFields = [];
     if(this.parent.options.initValues) {
       for(let key in this.parent.options.initValues) {
