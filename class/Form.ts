@@ -283,6 +283,7 @@ export class Form {
       case "number": field = new FieldNumber(field_descriptor, this); break;
       case "date": field = new FieldDate(field_descriptor, this); break;
       case "duration": field = new FieldDuration(field_descriptor, this); break;
+      case "select": field = new FieldSelect(field_descriptor, this); break;
       default: field = new Field(field_descriptor, this);
     }
     // group
@@ -294,7 +295,7 @@ export class Form {
           field.elm.style.display = "none";
         }
       }
-      else if(field.condition.key) {
+      else {
         this.conditionalFields.push(field);
       }
     }
@@ -302,36 +303,136 @@ export class Form {
     return field;
   }
 
+  convertCondition(conditions_arr, condition, i) {
+    if(!condition.key) {
+      var new_condition = {};
+      for(let k in condition) {
+        new_condition["key"] = k;
+        new_condition["value"] = condition[k];
+      }
+      conditions_arr.$and[i] = new_condition;
+    }
+  }
+
+  convertUniqueCondition(condition) {
+    if(!condition.$eq.key) {
+      var new_condition = {};
+      for(let k in condition.$eq) {
+        new_condition["key"] = k;
+        new_condition["value"] = condition.$eq[k];
+      }
+      condition.$eq = new_condition;
+    }
+    return condition;
+  }
+
+  getField(fieldKey) {
+    for(let i=0; i < this.fields.length; ++i) {
+      if(this.fields[i].key == fieldKey) {
+        return this.fields[i];
+      } 
+    }
+  }
+
+  getFields(fieldKeys_arr) {
+    let fields = [];
+    for(let i=0; i < fieldKeys_arr.length; ++i) {
+      fields.push(this.getField(fieldKeys_arr[i]));
+    }
+    return fields;
+  }
+
   initConditionalFields(fieldsContainer) {
-    fieldsContainer.conditionalFields.forEach((conditionalField) => {
-      fieldsContainer.fields.forEach((field) => {
-        if(field.key == conditionalField.condition.key) {
-          conditionalField.check_condition(field);
-          let arr = new Array("date", "switch", "switchGroup");
-          if(!["date", "switch", "switchGroup"].includes(field.type)) {
+    // var that = this;
+    // fieldsContainer.conditionalFields.forEach((cf) => {
+    //   if(Array.isArray(cf.condition)) {
+    //     cf.condition.forEach((cond) => {
+    //       if(cond.$eq !== undefined) {
+    //         fieldsContainer.fields.forEach((field) => {
+    //           if(cond.$eq.key == field.key) {
+    //             field.input_elm.addEventListener("input", (e) => {
+    //               cf.singleCondition(field, cond);
+    //             }); 
+    //           }
+    //         });
+    //       }
+    //       else if(Array.isArray(cond.$and)) {
+    //         fieldsContainer.fields.forEach((field) => {
+    //           cond.$and.forEach((c, i) => {
+    //             that.convertCondition(cond, c, i);
+    //             if(c.key == field.key) {
+    //               field.input_elm.addEventListener("input", (e) => {
+    //                 cf.multipleCondition(cond);
+    //               });
+    //             }
+    //           });
+    //         });
+    //       }
+    //     });
+    //   }
+    var that = this;
+    fieldsContainer.conditionalFields.forEach((cf) => {
+      if(Array.isArray(cf.condition)) {
+        var targetFields_keys = [];
+        cf.condition.forEach((cond) => {
+          var operator = null;
+          if(cond.$eq) operator = "$eq";
+          else if(cond.$and) operator = "$and";
+          else if(cond.$or) operator = "$or";
+          if(operator) {
+            if(operator == "$eq") {
+              cond = that.convertUniqueCondition(cond);
+              if(!targetFields_keys.includes(cond.$eq.key)) {
+                targetFields_keys.push(cond.$eq.key);
+              }
+            }
+            else {
+              cond[operator].forEach((cond_part, i) => {
+                that.convertCondition(cond, cond_part, i);
+                if(!targetFields_keys.includes(cond[operator][i].key)) {
+                  targetFields_keys.push(cond[operator][i].key);
+                }
+              });
+            }
+          }
+        });
+        fieldsContainer.fields.forEach((field) => {
+          if(targetFields_keys.includes(field.key)) {
             field.input_elm.addEventListener("input", (e) => {
-              conditionalField.check_condition(field);
-            });
+              cf.testConditions(targetFields_keys);
+            })
           }
-          else if(field.type == "switch") {
-            field.conditionalFields.push(conditionalField);
-          }
-          else if(field.type == "switchGroup") {
-            field.inputs_elm.forEach((input_elm) => {
-              input_elm.addEventListener("click", (e) => {
-                conditionalField.check_condition(field);
+        });
+      }
+      else {
+        fieldsContainer.fields.forEach((field, i) => {
+          if(field.key == cf.condition.key) {
+            cf.check_condition(field);
+            if(!["date", "switch", "switchGroup"].includes(field.type)) {
+              field.input_elm.addEventListener("input", (e) => {
+                cf.check_condition(field);
               });
-            });
-          }
-          else {
-            field.inputs_elm.forEach((input_elm) => {
-              input_elm.addEventListener("input", (e) => {
-                conditionalField.check_condition(field);
+            }
+            else if(field.type == "switch") {
+              field.conditionalFields.push(cf);
+            }
+            else if(field.type == "switchGroup") {
+              field.inputs_elm.forEach((input_elm) => {
+                input_elm.addEventListener("click", (e) => {
+                  cf.check_condition(field);
+                });
               });
-            });
+            }
+            else {
+              field.inputs_elm.forEach((input_elm) => {
+                input_elm.addEventListener("input", (e) => {
+                  cf.check_condition(field);
+                });
+              });
+            }
           }
-        }
-      });
+        });
+      }
     });
   }
   
@@ -799,27 +900,27 @@ class Field extends AbstractField {
       //   break;
       case "selectMany":
         this.generateSelectManyField(field); break;
-      case "select":
-        this.value = parseInt(this.initValue);
-        this.initLabel();
-        if(this.list) {
-          this.input_elm = document.createElement("select");
-          this.input_elm.setAttribute("class", "dgui-field-text");
-          this.list.forEach((list_item, i) => {
-            let option = document.createElement("option");
-            option.setAttribute("value", (typeof list_item === "string") ? i.toString() : list_item.value);
-            option.textContent = (typeof list_item === "string") ? list_item : list_item.label;
-            this.input_elm.appendChild(option);
-          });
-          this.input_elm.addEventListener("input", (e) => {
-            that.value = e.currentTarget.value;
-          });
-          if(typeof this.action === "function") {
-            this.input_elm.addEventListener("input", (e) => {
-              this.action(e.currentTarget.value);
-            });
-          }
-        } break;
+      // case "select":
+      //   this.value = parseInt(this.initValue);
+      //   this.initLabel();
+      //   if(this.list) {
+      //     this.input_elm = document.createElement("select");
+      //     this.input_elm.setAttribute("class", "dgui-field-text");
+      //     this.list.forEach((list_item, i) => {
+      //       let option = document.createElement("option");
+      //       option.setAttribute("value", (typeof list_item === "string") ? i.toString() : list_item.value);
+      //       option.textContent = (typeof list_item === "string") ? list_item : list_item.label;
+      //       this.input_elm.appendChild(option);
+      //     });
+      //     this.input_elm.addEventListener("input", (e) => {
+      //       that.value = e.currentTarget.value;
+      //     });
+      //     if(typeof this.action === "function") {
+      //       this.input_elm.addEventListener("input", (e) => {
+      //         this.action(e.currentTarget.value);
+      //       });
+      //     }
+      //   } break;
       case "choice":
         if(typeof this.radioButtons !== "undefined") {
           this.radioButtons.forEach((radioButton, i) => {
