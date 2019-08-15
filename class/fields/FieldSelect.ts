@@ -4,14 +4,15 @@ export class FieldSelect extends AbstractField {
   input_elm: HTMLSelectElement;
   list: Array<string>;
   action: Function;
+  addBlankInput: boolean;
 
   constructor(attr, parent) {
     super(attr, parent);
-    var that = this;
     this.list = (attr.list) ? attr.list : [];
+    this.initLabel();
     if(this.list.length == 0) this.hide();
     this.value = parseInt(attr.initValue);
-    this.initLabel();
+    this.addBlankInput = attr.addBlankInput;
     this.input_elm = document.createElement("select");
     this.input_elm.setAttribute("class", "dgui-field-text");
     this.generateList(this.list);
@@ -23,19 +24,23 @@ export class FieldSelect extends AbstractField {
 
   generateList(list) {
     if(list) {
+      if(this.addBlankInput) {
+        this.input_elm.appendChild(document.createElement("option"));
+      }
       list.forEach((list_item, i) => {
+        let index = (this.addBlankInput) ? i+1 : i;
         let option = document.createElement("option");
-        option.setAttribute("value", (typeof list_item === "string") ? i.toString() : list_item.value);
+        option.setAttribute("value", (typeof list_item === "string") ? index.toString() : list_item.value);
         option.textContent = (typeof list_item === "string") ? list_item : list_item.label;
         this.input_elm.appendChild(option);
       });
       this.input_elm.value = this.value;
       this.input_elm.addEventListener("input", (e) => {
-        this.value = e.currentTarget.value;
+        this.value = (<HTMLSelectElement>e.currentTarget).value;
       });
       if(typeof this.action === "function") {
         this.input_elm.addEventListener("input", (e) => {
-          this.action(e.currentTarget.value);
+          this.action((<HTMLSelectElement>e.currentTarget).value);
         });
       }
     }
@@ -47,6 +52,7 @@ export class FieldSelect extends AbstractField {
 
   clearValue() {
     this.input_elm.value = "0";
+    this.value = 0;
   }
 
   checkCondition1(a, b) {
@@ -67,25 +73,6 @@ export class FieldSelect extends AbstractField {
     return (counter == conditions.length);
   }
 
-  multipleCondition(c) {
-    console.log("multipleCondition");
-    if(c.$and != undefined) {
-      if(this.testAnd(c.$and)) {
-        if(c.list !== undefined) {
-          this.clearList();
-          this.generateList(c.list);
-          this.show();
-          // this.clearValue();
-        }
-      }
-    }
-
-    else {
-      this.clearList();
-      this.hide();
-    }
-  }
-
   getField(fields, key) {
     for(let i=0; i < fields.length; ++i) {
       if(fields[i].key == key) {
@@ -94,58 +81,14 @@ export class FieldSelect extends AbstractField {
     }
   }
 
-  testConditions(keys) {
-    var fields = this.parent.getFields(keys);
-    var fulfilled = false;
-    this.condition.forEach((condition) => {
-      if(condition.$eq) {
-        let field = this.getField(fields, condition.$eq.key);
-        if(condition.$eq.value == field.value) {
-          fulfilled = true;
-          if(condition.list) {
-            this.clearList();
-            this.generateList(condition.list);
-          }
-          this.show();
-        }
-      }
-      else if(condition.$and) {
-        var counter = 0;
-        condition.$and.forEach((condition_part) => {
-          let field = this.getField(fields, condition_part.key);
-          if(condition_part.value == field.value) {
-            ++counter;
-          }
-        });
-        if(counter == condition.$and.length) {
-          fulfilled = true;
-          if(condition.list) {
-            this.clearList();
-            this.generateList(condition.list);
-          }
-          this.show();
-        }
-      }
-    });
-    if(!fulfilled) {
-      this.clearList();
-      this.hide();
-    }
-  }
-
-  singleCondition(sourceField, op) {
-    console.log("single condition");
-    if(this.checkCondition1(sourceField.value, op.$eq.value)) {
-      if(op.list !== undefined) {console.log("single condition");
-        this.clearList();
-        this.generateList(op.list);
-        this.show();
-        // this.clearValue();
-      }
-    }
-    else {
-      this.clearList();
-      this.hide();
+  applyCondition(condition) {
+    this.active = true;
+    this.show();
+    this.clearList();
+    this.generateList(condition.list);
+    this.clearValue();
+    if(condition.focus) {
+      this.input_elm.focus();
     }
   }
 }

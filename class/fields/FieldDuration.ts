@@ -12,30 +12,49 @@ export class FieldDuration extends AbstractField {
     this.label_elm.style.marginTop = "0px";
     this.input_elm = document.createElement("input");
     this.input_elm.setAttribute("type", "hidden");
-    this.input_elm.value = (this.initValue) ? this.initValue : "";
     if(typeof this.initValue !== "undefined") {
-     var duration_arr = this.initValue.split(":");
-     duration_arr.forEach((val) => {
+      console.log(this.initValue);
+      var duration_arr = this.initValue.split(":");
+      duration_arr.forEach((val) => {
       val = parseInt(val);
      });
     }
-    [{max: "100"}, {max: "59"}].forEach((input_attr, i) => {
-      let input_hh = document.createElement("input");
-      input_hh.type = "number"; input_hh.min = "0"; input_hh.setAttribute("class", "dgui-field-text");
-      input_hh.style.marginTop = "-2px"; //////////////////////////////temporaire pour ajuster la hauteur quand plusieurs champs horizontalement
-      input_hh.style.borderColor = that.parent.colorSet.secBrdColor;
-      input_hh.setAttribute("step", "01");
-      input_hh.setAttribute("max", input_attr.max);
-      input_hh.value = "0";
+    [{max: "100", min: "0"}, {max: "60", min: "-1"}].forEach((input_attr, i) => {
+      let input_xx = document.createElement("input");
+      input_xx.type = "number"; input_xx.min = "0"; input_xx.setAttribute("class", "dgui-field-text");
+      input_xx.style.marginTop = "-2px"; //////////////////////////////temporaire pour ajuster la hauteur quand plusieurs champs horizontalement
+      input_xx.style.borderColor = that.parent.colorSet.secBrdColor;
+      input_xx.setAttribute("step", "01");
+      input_xx.setAttribute("max", input_attr.max);
+      input_xx.setAttribute("min", input_attr.min);
+      input_xx.setAttribute("placeholder", (i == 0) ? "hh" : "mm");
+      input_xx.value = "";
       if(typeof duration_arr !== "undefined") {
-        input_hh.value = duration_arr[i];
+        input_xx.value = duration_arr[i];
       }
-      input_hh.addEventListener("input", (e) => {
+      input_xx.addEventListener("input", (e) => {
+
+        if(that.inputs_elm[0].value == "") {
+          that.inputs_elm[0].value = "0";
+        }
+        if(that.inputs_elm[1].value == "60") {
+          that.inputs_elm[1].value = "0";
+          that.inputs_elm[0].value =  (parseInt(that.inputs_elm[0].value)+1).toString();
+        }
+        else if(that.inputs_elm[1].value == "-1") {
+          if(that.inputs_elm[0].value != "0") {
+            that.inputs_elm[1].value = "59";
+            that.inputs_elm[0].value =  (parseInt(that.inputs_elm[0].value)-1).toString();
+          }
+          else {
+            that.inputs_elm[1].value = "0";
+          }
+        }
         let hh = (that.inputs_elm[0].value.length == 1) ? "0" + that.inputs_elm[0].value : that.inputs_elm[0].value;
         let mm = (that.inputs_elm[1].value.length == 1) ? "0" + that.inputs_elm[1].value : that.inputs_elm[1].value;
-        that.input_elm.value = hh + ":" + mm;
+        that.input_elm.value = hh + ":" + (mm) ? mm : "00";
       });
-      this.inputs_elm.push(input_hh);
+      this.inputs_elm.push(input_xx);
     });
     // -----------------
     this.elm.setAttribute("class", (this.label) ? "dgui-vertical-layout" : "dgui-form-pannel-layout");
@@ -44,11 +63,11 @@ export class FieldDuration extends AbstractField {
     this.inputs_elm.forEach((input_elm) => {
       let elm = document.createElement("div");
       elm.setAttribute("class", "dgui-form-pannel-element");
-      elm.setAttribute("style", "flex: 1; padding-left: 2px; padding-right: 2px");
+      elm.setAttribute("style", "flex: 1; padding-left: 2px; padding-right: 2px;");
       elm.appendChild(input_elm);
       hLayout_elm.appendChild(elm);
     });
-    if(this.label) { let label_elm = document.createElement("label"); label_elm.textContent = this.label; label_elm.setAttribute("style", "margin-bottom: 0px; margin-top: 0px; margin-left: 5px;"); this.elm.appendChild(label_elm); }
+    if(this.label) { let label_elm = document.createElement("label"); label_elm.textContent = this.label; label_elm.setAttribute("style", "margin-bottom: 0px; padding-top: 10px; margin-left: 5px;"); this.elm.appendChild(label_elm); }
     this.elm.appendChild(hLayout_elm);
   }
 }

@@ -4,6 +4,7 @@ import { get } from './state';
 import { splitWhereOneOfSeperators, copyToClipboard, elementBelongsToDataType, notEmpty, join, setModifier, disableDefaultContextmenu, disableMouseSelection, setDefaultCursor } from './utility';
 
 import { Form, formPannel_options, button, formPannel_fieldGroup } from './class/Form';
+import { BlazeTemplate } from './class/BlazeTemplate';
 import { Modal } from './class/Modal';
 
 //Exports
@@ -197,7 +198,7 @@ class ContextMenu {
           });
           if(field.type == "switch") {
             field.elm.addEventListener("click", (event) => {
-              let index = event.target.dataset.index;
+              let index = (<HTMLDivElement>event.target).dataset.index;
               // main callback
               if(!that.selected_items.includes(that.fields[index].key)) {
                 if(field.group) {
@@ -240,7 +241,7 @@ class ContextMenu {
           }
           else if(field.type == "button") {
             field.elm.addEventListener("click", (event) => {
-              let index = event.target.dataset.index;
+              let index = (<HTMLButtonElement>event.target).dataset.index;
               if(that.fields[index].action) {
                 that.fields[index].action(that.target);
               }
@@ -470,6 +471,12 @@ export function ownmodal(htmlElm: any, clean, title="Boîte de modale personnali
 }
 
 class FormBlock {
+  feedback: Function;
+  quit: Function;
+  abort: Function;
+  submit: Function;
+  form: Form;
+
   constructor(parent: any, formInitializer: formPannel_options, callback) {
     this.feedback = callback;
     this.quit = function() {

@@ -16,6 +16,9 @@ import { FieldNumber } from './fields/FieldNumber';
 import { FieldDate } from './fields/FieldDate';
 import { FieldDuration } from './fields/FieldDuration';
 import { FieldSelect } from './fields/FieldSelect';
+import { FieldSwitch } from './fields/FieldSwitch';
+
+import { confirm, modal, contextMenu} from '../dgui';
 
 /* --------------------------------- Interfaces Form ---------------------------------------------*/
 
@@ -27,6 +30,7 @@ export interface formPannel_options {
   containerWidth?: number;
   shape?: "rounded" | "squared";
   allFieldsMandatory?: boolean; //à implémenter
+  initValues?: any;
 }
 
 export interface button {
@@ -62,7 +66,8 @@ export class Form {
   elm: HTMLDivElement;
   colorSet: ColorSet;
   groups: Array<formPannel_fieldGroup>;
-  conditionalFields: Array<Field>; 
+  conditionalFields: Array<Field>;
+  toHide: any;
 
   constructor(properties, parent) {
     var that = this;
@@ -284,6 +289,7 @@ export class Form {
       case "date": field = new FieldDate(field_descriptor, this); break;
       case "duration": field = new FieldDuration(field_descriptor, this); break;
       case "select": field = new FieldSelect(field_descriptor, this); break;
+      case "switch": field = new FieldSwitch(field_descriptor, this); break;
       default: field = new Field(field_descriptor, this);
     }
     // group
@@ -343,33 +349,6 @@ export class Form {
   }
 
   initConditionalFields(fieldsContainer) {
-    // var that = this;
-    // fieldsContainer.conditionalFields.forEach((cf) => {
-    //   if(Array.isArray(cf.condition)) {
-    //     cf.condition.forEach((cond) => {
-    //       if(cond.$eq !== undefined) {
-    //         fieldsContainer.fields.forEach((field) => {
-    //           if(cond.$eq.key == field.key) {
-    //             field.input_elm.addEventListener("input", (e) => {
-    //               cf.singleCondition(field, cond);
-    //             }); 
-    //           }
-    //         });
-    //       }
-    //       else if(Array.isArray(cond.$and)) {
-    //         fieldsContainer.fields.forEach((field) => {
-    //           cond.$and.forEach((c, i) => {
-    //             that.convertCondition(cond, c, i);
-    //             if(c.key == field.key) {
-    //               field.input_elm.addEventListener("input", (e) => {
-    //                 cf.multipleCondition(cond);
-    //               });
-    //             }
-    //           });
-    //         });
-    //       }
-    //     });
-    //   }
     var that = this;
     fieldsContainer.conditionalFields.forEach((cf) => {
       if(Array.isArray(cf.condition)) {
@@ -398,11 +377,13 @@ export class Form {
         });
         fieldsContainer.fields.forEach((field) => {
           if(targetFields_keys.includes(field.key)) {
+            cf.testConditions(targetFields_keys);
             field.input_elm.addEventListener("input", (e) => {
               cf.testConditions(targetFields_keys);
             })
           }
         });
+        console.log(targetFields_keys);
       }
       else {
         fieldsContainer.fields.forEach((field, i) => {
@@ -433,7 +414,8 @@ export class Form {
           }
         });
       }
-    });
+    })
+
   }
   
   initDisplay() {
@@ -622,37 +604,39 @@ export class Form {
   }
 
   submitField(field, values) {
-    let initValue = (typeof field.initValue !== "undefined") ? field.initValue : "";
-    if(["text", "password", "number", "select", "date", "duration"].includes(field.type)) {
-      // On ne soumet que les champs dont la valeur a été modifiée où qui sont "requis"
-      if(field.input_elm.value != initValue || field.required === true) {
-        values.push(this.getKeyValue(field));
-      }
-    }
-    else if(field.type == "switch" || field.type == "switchGroup" || field.type == "selectMany") {
-      // On ne soumet que les champs dont la valeur a été modifiée
-      if((field.value != initValue || field.required === true) && !field.exclude) {
-        // Si le champs possède un attribut key il sera renvoyé sous forme d'objet (key: value)
-        if(typeof field.key !== "undefined") {
-          let objSwitchField = {};
-          objSwitchField[field.key] = (["switch", "selectMany"].includes(field.type)) ? field.value : parseInt(field.value);
-          values.push(objSwitchField);
-        }
-        else {
-          values.push(field.value);
+    if(field.active) {
+      let initValue = (typeof field.initValue !== "undefined") ? field.initValue : "";
+      if(["text", "password", "number", "select", "date", "duration"].includes(field.type)) {
+        // On ne soumet que les champs dont la valeur a été modifiée où qui sont "requis"
+        if(field.input_elm.value != initValue || field.required === true) {
+          values.push(this.getKeyValue(field));
         }
       }
-    }
-    else if(field.type == "choice") {
-      for(let i = 0; i < field.radioButtons.length; ++i) {
-        if(field.radioButtons[i].input_elm.checked) {
+      else if(field.type == "switch" || field.type == "switchGroup" || field.type == "selectMany") {
+        // On ne soumet que les champs dont la valeur a été modifiée
+        if((field.value != initValue || field.required === true) && !field.exclude) {
+          // Si le champs possède un attribut key il sera renvoyé sous forme d'objet (key: value)
           if(typeof field.key !== "undefined") {
-            let objRadioField = {};
-            objRadioField[field.key] = field.radioButtons[i].value;
-            values.push(objRadioField);
+            let objSwitchField = {};
+            objSwitchField[field.key] = (["switch", "selectMany"].includes(field.type)) ? field.value : parseInt(field.value);
+            values.push(objSwitchField);
           }
           else {
-            values.push(field.radioButtons[i].value);
+            values.push(field.value);
+          }
+        }
+      }
+      else if(field.type == "choice") {
+        for(let i = 0; i < field.radioButtons.length; ++i) {
+          if(field.radioButtons[i].input_elm.checked) {
+            if(typeof field.key !== "undefined") {
+              let objRadioField = {};
+              objRadioField[field.key] = field.radioButtons[i].value;
+              values.push(objRadioField);
+            }
+            else {
+              values.push(field.radioButtons[i].value);
+            }
           }
         }
       }
@@ -774,7 +758,7 @@ class Field extends AbstractField {
         this.inputs_elm[this.inputs_elm.length-1].style.borderTopRightRadius = "18px";
         this.inputs_elm[this.inputs_elm.length-1].style.borderBottomRightRadius = "18px";
         this.inputs_elm.forEach((input_elm, i) => {
-          input_elm.addEventListener("click", (e) => {
+          input_elm.addEventListener("click", (e: any) => {
             that.inputs_elm.forEach((ie) => {
               ie.setAttribute("class", "dgui-field-switch");
               ie.style.backgroundColor = that.parent.colorSet.secColor;
@@ -785,50 +769,50 @@ class Field extends AbstractField {
           });
         });
         break;
-      case "switch":
-        this.input_elm = document.createElement("div");
-        this.generateSwitch(this.input_elm, this.label);
-        this.input_elm.setAttribute("class", (this.initValue) ? "dgui-field-switch-selected" : "dgui-field-switch");
-        this.input_elm.style.backgroundColor = (this.initValue) ? "#696969" : this.parent.colorSet.secColor;
-        this.input_elm.style.height = "36px";
-        this.value = this.initValue;
-        this.input_elm.addEventListener("click", (e) => {
-          let elm = e.currentTarget;
-          if(!that.value) {
-            if(that.parent && that.group) {
-              that.parent.groups.forEach((group) => {
-                if(group.name == that.group) {
-                  group.fields.forEach((field) => {
-                    field.value = false;
-                    field.conditionalFields.forEach((cf) => {
-                      cf.check_condition(field);
-                    });
-                    field.input_elm.setAttribute("class", "dgui-field-switch");
-                    field.input_elm.style.backgroundColor = that.parent.colorSet.secColor;
-                  });
-                }
-              });
-            }
-            elm.setAttribute("class", "dgui-field-switch-selected");
-            elm.style.backgroundColor = "#696969";
-            that.value = true;
-          }
-          else {
-            elm.setAttribute("class", "dgui-field-switch");
-            elm.style.backgroundColor = that.parent.colorSet.secColor;
-            that.value = false;
-          }
-          that.conditionalFields.forEach((cf) => {
-            cf.check_condition(that);
-          });
-          // action
-          if(typeof that.action !== "undefined") {
-            if(typeof that.action === "function") {
-              that.action(that.value);
-            }
-          }
-        });
-        break;
+      // case "switch":
+      //   this.input_elm = document.createElement("div");
+      //   this.generateSwitch(this.input_elm, this.label);
+      //   this.input_elm.setAttribute("class", (this.initValue) ? "dgui-field-switch-selected" : "dgui-field-switch");
+      //   this.input_elm.style.backgroundColor = (this.initValue) ? "#696969" : this.parent.colorSet.secColor;
+      //   this.input_elm.style.height = "36px";
+      //   this.value = this.initValue;
+      //   this.input_elm.addEventListener("click", (e) => {
+      //     let elm = e.currentTarget;
+      //     if(!that.value) {
+      //       if(that.parent && that.group) {
+      //         that.parent.groups.forEach((group) => {
+      //           if(group.name == that.group) {
+      //             group.fields.forEach((field) => {
+      //               field.value = false;
+      //               field.conditionalFields.forEach((cf) => {
+      //                 cf.check_condition(field);
+      //               });
+      //               field.input_elm.setAttribute("class", "dgui-field-switch");
+      //               field.input_elm.style.backgroundColor = that.parent.colorSet.secColor;
+      //             });
+      //           }
+      //         });
+      //       }
+      //       elm.setAttribute("class", "dgui-field-switch-selected");
+      //       elm.style.backgroundColor = "#696969";
+      //       that.value = true;
+      //     }
+      //     else {
+      //       elm.setAttribute("class", "dgui-field-switch");
+      //       elm.style.backgroundColor = that.parent.colorSet.secColor;
+      //       that.value = false;
+      //     }
+      //     that.conditionalFields.forEach((cf) => {
+      //       cf.check_condition(that);
+      //     });
+      //     // action
+      //     if(typeof that.action !== "undefined") {
+      //       if(typeof that.action === "function") {
+      //         that.action(that.value);
+      //       }
+      //     }
+      //   });
+      //   break;
       case "message":
         this.input_elm = document.createElement("div");
         setDefaultCursor(this.input_elm);
@@ -839,88 +823,9 @@ class Field extends AbstractField {
         this.button_elm = document.createElement("button");
         this.button_elm.setAttribute("class", this.BSClass);
         this.button_elm.textContent = this.label;
-        this.button_elm.addEventListener("click", that.action); break;
-      // case "date":
-
-      // case "duration":
-      //   this.inputs_elm = [];
-      //   this.initLabel();
-      //   this.label_elm.style.marginTop = "0px";
-      //   this.input_elm = document.createElement("input");
-      //   this.input_elm.setAttribute("type", "hidden");
-      //   this.input_elm.value = (this.initValue) ? this.initValue : "";
-      //   if(typeof this.initValue !== "undefined") {
-      //    var duration_arr = this.initValue.split(":");
-      //    duration_arr.forEach((val) => {
-      //     val = parseInt(val);
-      //    });
-      //   }
-      //   [{max: "100"}, {max: "59"}].forEach((input_attr, i) => {
-      //     let input_hh = document.createElement("input");
-      //     input_hh.type = "number"; input_hh.min = "0"; input_hh.setAttribute("class", "dgui-field-text");
-      //     input_hh.style.marginTop = "-2px"; //////////////////////////////temporaire pour ajuster la hauteur quand plusieurs champs horizontalement
-      //     input_hh.style.borderColor = that.parent.colorSet.secBrdColor;
-      //     input_hh.setAttribute("step", "01");
-      //     input_hh.setAttribute("max", input_attr.max);
-      //     input_hh.value = "0";
-      //     if(typeof duration_arr !== "undefined") {
-      //       input_hh.value = duration_arr[i];
-      //     }
-      //     input_hh.addEventListener("input", (e) => {
-      //       let hh = (that.inputs_elm[0].value.length == 1) ? "0" + that.inputs_elm[0].value : that.inputs_elm[0].value;
-      //       let mm = (that.inputs_elm[1].value.length == 1) ? "0" + that.inputs_elm[1].value : that.inputs_elm[1].value;
-      //       that.input_elm.value = hh + ":" + mm;
-      //     });
-      //     this.inputs_elm.push(input_hh);
-      //   });
-      //   break;
-      // case "text": case "password": case "number":
-      //   this.initValue = (field.initValue) ? field.initValue : "";
-      //   this.initLabel();
-      //   this.input_elm = document.createElement("input");
-      //   this.input_elm.setAttribute("type", field.type);
-      //   this.input_elm.setAttribute("class", "dgui-field-text");
-      //   this.input_elm.style.borderColor = this.parent.colorSet.secBrdColor;
-      //   this.input_elm.style.height = "36px";
-      //   this.input_elm.setAttribute("autocorrect", "off");
-      //   if(field.placeholder) {
-      //     this.input_elm.setAttribute("placeholder", field.placeholder);
-      //   }
-      //   if(field.align) {
-      //     this.input_elm.style.textAlign = field.align;
-      //   }
-      //   if(field.max) {
-      //     this.input_elm.setAttribute("maxlength", field.max);
-      //   }
-      //   if(typeof this.action === "function") {
-      //     this.input_elm.addEventListener("input", (e) => {
-      //       this.action(e.currentTarget.value);
-      //     });
-      //   }
-      //   break;
+        this.button_elm.addEventListener("click", (e) => { that.action }); break;
       case "selectMany":
         this.generateSelectManyField(field); break;
-      // case "select":
-      //   this.value = parseInt(this.initValue);
-      //   this.initLabel();
-      //   if(this.list) {
-      //     this.input_elm = document.createElement("select");
-      //     this.input_elm.setAttribute("class", "dgui-field-text");
-      //     this.list.forEach((list_item, i) => {
-      //       let option = document.createElement("option");
-      //       option.setAttribute("value", (typeof list_item === "string") ? i.toString() : list_item.value);
-      //       option.textContent = (typeof list_item === "string") ? list_item : list_item.label;
-      //       this.input_elm.appendChild(option);
-      //     });
-      //     this.input_elm.addEventListener("input", (e) => {
-      //       that.value = e.currentTarget.value;
-      //     });
-      //     if(typeof this.action === "function") {
-      //       this.input_elm.addEventListener("input", (e) => {
-      //         this.action(e.currentTarget.value);
-      //       });
-      //     }
-      //   } break;
       case "choice":
         if(typeof this.radioButtons !== "undefined") {
           this.radioButtons.forEach((radioButton, i) => {
@@ -939,17 +844,9 @@ class Field extends AbstractField {
     }
     if(field.htmlAttr) { this.setHtmlAttributs(field.htmlAttr); }
     if(field.cssAttr) { this.setCSSAttributs(field.cssAttr); }
-    // if(field.type == "number") {
-    //   this.input_elm.setAttribute("type", "number");
-    //   this.input_elm.setAttribute("step", (field.step) ? field.step : 1);
-    //   this.input_elm.setAttribute("min", "0");
-    //   if(!this.initValue) {
-    //     this.input_elm.value = "0";
-    //   }
+    // if(typeof field.initValue !== "undefined" && field.type != "switchGroup") {
+    //   this.input_elm.value = this.initValue;
     // }
-    if(typeof field.initValue !== "undefined" && field.type != "switchGroup") {
-      this.input_elm.value = this.initValue;
-    }
     /*                                            - init display -                                      */
     if(!["message", "date", "switchGroup"].includes(field.type)) {
       this.elm.setAttribute("class", "dgui-form-pannel-element");
@@ -958,9 +855,6 @@ class Field extends AbstractField {
       this.elm.setAttribute("class", (this.label) ? "dgui-vertical-layout" : "dgui-form-pannel-layout");
       this.elm.setAttribute("style", "padding-left: 15px; padding-right: 15px;");
     }
-    // else if(field.type == "date" || field.type == "duration") {
-    //   this.elm.setAttribute("class", (this.label) ? "dgui-vertical-layout" : "dgui-form-pannel-layout");
-    // }
     else {
       this.elm.setAttribute("class", "dgui-form-pannel-element-message");
     }
@@ -987,21 +881,6 @@ class Field extends AbstractField {
       }
       this.elm.appendChild(this.input_elm);
     }
-    else if(field.type == "date") {
-      // let hLayout_elm = document.createElement("div"); hLayout_elm.setAttribute("class", "dgui-form-pannel-layout");
-      // for(let i = 0; i < this.inputs_elm.length; ++i) {
-      //   let date_layer = document.createElement("div");
-      //   date_layer.setAttribute("class", "dgui-form-pannel-element");
-      //   date_layer.setAttribute("style", "padding-left: 5px; padding-right: 5px; flex: 1;");
-      //   date_layer.style.flex = (this.date_units[i] == "YYYY") ? "2" : "1";
-      //   if(!field.label) { date_layer.appendChild(this.labels_elm[i]); }
-      //   date_layer.appendChild(this.inputs_elm[i]);
-      //   if(!this.label) { this.elm.appendChild(date_layer); }
-      //   else { hLayout_elm.appendChild(date_layer) }
-      // }
-      // if(this.label) { this.elm.appendChild(this.label_elm); this.elm.appendChild(hLayout_elm); }
-      // this.elm.style.paddingLeft = "15px"; this.elm.style.paddingRight = "15px";
-    }
     else if(field.type == "switchGroup" || field.type == "duration") {
       let hLayout_elm = document.createElement("div"); hLayout_elm.setAttribute("class", "dgui-form-pannel-layout");
       this.inputs_elm.forEach((input_elm) => {
@@ -1014,33 +893,9 @@ class Field extends AbstractField {
       if(this.label) { let label_elm = document.createElement("label"); label_elm.textContent = this.label; label_elm.setAttribute("style", "margin-bottom: 0px; margin-top: 0px; margin-left: 5px;"); this.elm.appendChild(label_elm); }
       this.elm.appendChild(hLayout_elm);
     }
-    // else if(field.type == "duration") {
-    //   let hLayout_elm = document.createElement("div"); hLayout_elm.setAttribute("class", "dgui-form-pannel-layout");
-    //   this.inputs_elm.forEach((input_elm) => {
-    //     let elm = document.createElement("div");
-    //     elm.setAttribute("class", "dgui-form-pannel-element");
-    //     elm.setAttribute("style", "flex: 1; padding-left: 2px; padding-right: 2px");
-    //     elm.appendChild(input_elm);
-    //     hLayout_elm.appendChild(elm);
-    //   });
-    //   if(this.label) { let label_elm = document.createElement("label"); label_elm.textContent = this.label; label_elm.setAttribute("style", "margin-bottom: 0px; margin-top: 10px; margin-left: 5px;"); this.elm.appendChild(label_elm); }
-    //   this.elm.appendChild(hLayout_elm);
-    //}
     else {
       this.elm.appendChild(this.input_elm);
     }
-  }
-
-  generateSwitch(input_elm, label) {
-    input_elm.setAttribute("class", "dgui-field-switch");
-    input_elm.setAttribute("style", "display: flex; justify-content: center; align-items: center; margin-top: 0px");
-    if(this.display == "noLabel") {
-      input_elm.style.marginTop = "32px";
-    }
-    input_elm.style.backgroundColor = this.parent.colorSet.secColor;
-    let text_elm = document.createElement("div");
-    text_elm.textContent = label;
-    input_elm.appendChild(text_elm);
   }
 
   updateSelectManyValue(value) {

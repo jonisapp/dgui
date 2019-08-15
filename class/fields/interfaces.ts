@@ -14,8 +14,10 @@ export interface field_descriptor {
   list: Array<string> | Array<Object>;                           // for type select
   group: string;                                                 // for type switch
   radioButtons: Array<field_radioButton>;                        // for type choice
-  max: number,
-  align: string
+  max: number;
+  align: string;
+  step: string;
+  display: "noLabel" | "";
 }
 
 export interface field_radioButton {

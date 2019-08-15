@@ -1,3 +1,4 @@
+import { Form } from '../Form';
 import { field_descriptor } from './interfaces';
 
 export abstract class AbstractField {
@@ -14,12 +15,25 @@ export abstract class AbstractField {
   elm: HTMLDivElement;
   conditionalFields: Array<any>; // !
   condition: any;                // !
+  //private
+  active: boolean;
+  exclude: boolean;
+  action: Function | boolean;
+  display: "noLabel";
+
+  input_elm: HTMLInputElement | HTMLSelectElement;
+  inputs_elm: HTMLInputElement[];
 
   constructor(attr: field_descriptor, parent?: Form) {
     this.key = attr.key;
-    this.value = attr.initValue;
+    this.initValue = (attr.initValue) ? attr.initValue : "";
+    this.value = (attr.initValue) ? attr.initValue : null;
     this.type = (attr.type) ? attr.type : "text";
     this.parent = (parent) ? parent : null;
+    if(attr.display == "noLabel") {
+      this.display = "noLabel"
+    }
+    this.active = true;
     this.conditionalFields = [];
     this.condition = attr.condition;
     this.label = (attr.label) ? attr.label : null;
@@ -44,10 +58,13 @@ export abstract class AbstractField {
 
   show() {
     this.elm.style.display = "block";
+    this.active = true;
   }
 
   hide() {
+    this.value = null;
     this.elm.style.display = "none";
+    this.active = false;
   }
 
   getField(fields, key) {
@@ -58,43 +75,71 @@ export abstract class AbstractField {
     }
   }
 
+  applyCondition(condition) {
+    this.show();
+  }
+
+  testCondition(condition, fields, fulfilledCondition) {
+    condition.paramsValues = [];
+    if(condition.$eq) {
+      let field = this.getField(fields, condition.$eq.key);
+      if(condition.$eq.value == field.value) {
+        fulfilledCondition = true;
+        this.applyCondition(condition);
+      }
+    }
+    else if(condition.$and) {
+      var counter = 0;
+      for(let i = 0; i < condition.$and.length; ++i) {
+        let field = this.getField(fields, condition.$and[i].key);
+        if(field.active) {
+          if(typeof condition.$and[i].value === "number") {
+            if(condition.$and[i].value == parseInt(field.value)) {
+              counter++;
+            }
+          }
+          else if(condition.$and[i].value === "*") {
+            counter++;
+            if(condition.params.includes(field.key)) {
+              condition.paramsValues.push(field.value);
+            }
+          }
+          else if(typeof condition.$and[i].value === "object") {
+            if(condition.$and[i].value.$ne) {
+              if(condition.$and[i].value.$ne !== parseInt(field.value)) {
+                counter++;
+              }
+            }
+            else if(condition.$and[i].value.$nin) {
+              if(!condition.$and[i].value.$nin.includes(parseInt(field.value))) {
+                counter++;
+              }
+            }
+          }
+        }
+      }
+      if(counter == condition.$and.length) {
+        fulfilledCondition = true;
+        this.applyCondition(condition);
+      }
+    }
+    return fulfilledCondition; 
+  }
+
   testConditions(keys) {
     var fields = this.parent.getFields(keys);
-    var fulfilled = false;
+    var fulfilledCondition = false;
     this.condition.forEach((condition) => {
-      if(condition.$eq) {
-        let field = this.getField(fields, condition.$eq.key);
-        if(condition.$eq.value == field.value) {
-          fulfilled = true;
-          if(condition.list) {
-            this.generateList(condition.list);
-          }
-          this.show();
-        }
-      }
-      else if(condition.$and) {
-        var counter = 0;
-        condition.$and.forEach((condition_part) => {
-          let field = this.getField(fields, condition_part.key);
-          if(condition_part.value == field.value) {
-            ++counter;
-          }
-        });
-        if(counter == condition.$and.length) {
-          fulfilled = true;
-          if(condition.list) {
-            this.generateList(condition.list);
-          }
-          this.show();
-        }
-      }
+      fulfilledCondition = this.testCondition(condition, fields, fulfilledCondition);
     });
-    if(!fulfilled) {
+    if(!fulfilledCondition) {
       this.hide();
+      this.reset();
+      return false;
     }
   }
 
-  check_condition(targetField: Field) {
+  check_condition(targetField: AbstractField) {
     var that = this;
     let operator = (this.condition.operator) ? this.condition.operator : "==";
     this.condition.action = (this.condition.action) ? this.condition.action : ["show"];
@@ -138,5 +183,17 @@ export abstract class AbstractField {
         if(this.condition.action.includes("show")) { this.elm.style.display = "none"; }
       }
     }
+  }
+
+  generateSwitch(input_elm, label) {
+    input_elm.setAttribute("class", "dgui-field-switch");
+    input_elm.setAttribute("style", "display: flex; justify-content: center; align-items: center; margin-top: 0px");
+    if(this.display == "noLabel") {
+      input_elm.style.marginTop = "32px";
+    }
+    input_elm.style.backgroundColor = this.parent.colorSet.secColor;
+    let text_elm = document.createElement("div");
+    text_elm.textContent = label;
+    input_elm.appendChild(text_elm);
   }
 }

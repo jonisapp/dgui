@@ -1,4 +1,6 @@
 import { AbstractField } from './AbstractField';
+import { Form } from '../Form';
+import { field_descriptor } from './interfaces';
 
 export class InputField extends AbstractField {
   /*                                              - Définition -                                        */
@@ -19,7 +21,7 @@ export class InputField extends AbstractField {
       this.elm.appendChild(this.input_elm);
   
       if(attr.max) {
-        this.input_elm.setAttribute("maxlength", attr.max);
+        this.input_elm.setAttribute("maxlength", attr.max.toString());
       }
   
       if(attr.align) {
@@ -28,8 +30,23 @@ export class InputField extends AbstractField {
   
       if(typeof this.action === "function") {
         this.input_elm.addEventListener("input", (e) => {
-          this.action(e.currentTarget.value);
+          this.action((<HTMLInputElement>e.currentTarget).value);
         });
       }
+    }
+
+    applyCondition(condition) {
+      if(condition.placeholder) {
+        this.input_elm.setAttribute("placeholder", condition.placeholder);
+      }
+      this.show();
+    }
+
+    focus() {
+      this.input_elm.focus();
+    }
+
+    reset() {
+      this.input_elm.setAttribute("placeholder", "");
     }
   }

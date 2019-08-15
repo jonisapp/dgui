@@ -1,5 +1,8 @@
 import { AbstractField } from './AbstractField';
 
+import { field_descriptor } from './interfaces';
+import { Form } from '../Form';
+
 import { splitWhereOneOfSeperators} from '../../utility';
 import { tr } from '../../translations';
 
@@ -99,7 +102,7 @@ export class FieldDate extends AbstractField {
             input.value = initMonthValue; input.max = "12";
             label_str = tr.lbl("month"); 
             input.addEventListener("input", (e) => {
-              that.updateDaysInMonth(e.currentTarget.value);
+              that.updateDaysInMonth((<HTMLInputElement>e.currentTarget).value);
             }); break;
           case "DD":
             this.date_comps_indexes.d = index;
