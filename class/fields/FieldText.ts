@@ -8,7 +8,6 @@ export class FieldText extends InputField {
   
     constructor(attr: field_descriptor, parent?: Form) {
       super(attr, parent);
-      //this.initValue = (attr.initValue) ? attr.initValue : "";
       this.input_elm.setAttribute("autocorrect", "off");
       this.input_elm.setAttribute("spellcheck", "false");
       if(attr.placeholder) this.setPlaceholder(attr.placeholder);
@@ -16,6 +15,10 @@ export class FieldText extends InputField {
 
     setPlaceholder(placeholder: string) {
       this.input_elm.setAttribute("placeholder", (typeof placeholder !== "undefined") ? placeholder : "");
+    }
+
+    getValue(): string {
+      return this.input_elm.value;
     }
 
     applyCondition(condition) {

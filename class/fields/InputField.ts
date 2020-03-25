@@ -35,6 +35,10 @@ export class InputField extends AbstractField {
       }
     }
 
+    getValue() {
+      return this.input_elm.value;
+    }
+
     applyCondition(condition) {
       if(condition.placeholder) {
         this.input_elm.setAttribute("placeholder", condition.placeholder);

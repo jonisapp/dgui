@@ -22,6 +22,7 @@ export class Modal {
   }
 
   submit(form) {
+    console.log('SUBMITMODAL');
     this.feedback(form);
     //this.background.del();
   }

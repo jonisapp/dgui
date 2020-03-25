@@ -7,14 +7,16 @@ export class FieldSelect extends AbstractField {
   addBlankInput: boolean;
 
   constructor(attr, parent) {
+    console.log(parent);
     super(attr, parent);
     this.list = (attr.list) ? attr.list : [];
     this.initLabel();
     if(this.list.length == 0) this.hide();
-    this.value = parseInt(attr.initValue);
+    this.value = attr.initValue;
     this.addBlankInput = attr.addBlankInput;
     this.input_elm = document.createElement("select");
     this.input_elm.setAttribute("class", "dgui-field-text");
+    this.input_elm.style.borderColor = parent.colorSet.secBrdColor;
     this.generateList(this.list);
     if(this.label) {
       this.elm.appendChild(this.label_elm);
@@ -27,6 +29,7 @@ export class FieldSelect extends AbstractField {
       if(this.addBlankInput) {
         this.input_elm.appendChild(document.createElement("option"));
       }
+      console.log(list);
       list.forEach((list_item, i) => {
         let index = (this.addBlankInput) ? i+1 : i;
         let option = document.createElement("option");
@@ -36,11 +39,11 @@ export class FieldSelect extends AbstractField {
       });
       this.input_elm.value = this.value;
       this.input_elm.addEventListener("input", (e) => {
-        this.value = (<HTMLSelectElement>e.currentTarget).value;
+        this.value = parseInt((<HTMLSelectElement>e.currentTarget).value);
       });
       if(typeof this.action === "function") {
         this.input_elm.addEventListener("input", (e) => {
-          this.action((<HTMLSelectElement>e.currentTarget).value);
+          this.action(parseInt((<HTMLSelectElement>e.currentTarget).value));
         });
       }
     }
@@ -79,6 +82,13 @@ export class FieldSelect extends AbstractField {
         return fields[i];
       }
     }
+  }
+
+  getValue(): string | number {
+    if(!isNaN(this.input_elm.value)) {
+      return parseInt(this.input_elm.value);
+    }
+    return this.input_elm.value;
   }
 
   applyCondition(condition) {

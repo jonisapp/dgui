@@ -8,13 +8,12 @@ export class FieldSwitch extends AbstractField {
   constructor(attr, parent) {
     super(attr, parent);
     var that = this;
-    this.value = (attr.initValue) ? attr.initValue : false;
+    this.value = (attr.initValue === true) ? true : false;
     this.input_elm = document.createElement("div");
     this.generateSwitch(this.input_elm, this.label);
     this.input_elm.setAttribute("class", (this.initValue) ? "dgui-field-switch-selected" : "dgui-field-switch");
     this.input_elm.style.backgroundColor = (this.initValue) ? "#696969" : this.parent.colorSet.secColor;
     this.input_elm.style.height = "36px";
-    this.value = this.initValue;
     this.input_elm.addEventListener("click", (e) => {
       let elm: any = e.currentTarget;
       if(!that.value) {
@@ -51,7 +50,12 @@ export class FieldSwitch extends AbstractField {
         }
       }
     });
-    this.elm.setAttribute("class", "dgui-form-pannel-element-message");
+    this.elm = document.createElement('div');
+    this.elm.setAttribute("class", "dgui-form-pannel-element-switch");
     this.elm.appendChild(this.input_elm);
+  }
+
+  getValue() {
+    return this.value;
   }
 }

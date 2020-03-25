@@ -26,7 +26,7 @@ export class ColorSet {
     this.arr_baseIntensity = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "a", "b", "c", "d", "e", "f"];
     this.prmColor = color1;
     this.secColor = (color2) ? color2 : this.algo0(color1, 15);
-    this.secBrdColor = this.algo0(this.secColor, 30);
+    this.secBrdColor = this.algo0(this.secColor, 20);
     this.thrColor = (color3) ? color3 : this.algo0(this.secColor, 25);
     this.thrBrdColor = this.algo0(this.thrColor, 50);
     this.fontColor = this.algo0(this.thrColor, 80);

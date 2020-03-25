@@ -118,4 +118,8 @@ export class FieldDate extends AbstractField {
       });
       that.updateDaysInMonth(this.inputs_elm[this.date_comps_indexes.m].value);
     }
+
+    getValue() {
+      return this.value;
+    }
   }

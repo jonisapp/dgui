@@ -47,6 +47,14 @@
 	padding: 5px 20px 5px 20px;
 }
 
+.dgui-form-pannel-element-switch {
+    display: flex;
+    height: 78px;
+    flex-direction: row;
+    align-items: flex-end;
+    margin-bottom: 15px;
+}
+
 .dgui-field-text {
     display: block;
     width: 100%;
@@ -69,23 +77,25 @@
 }
 
 .dgui-field-switch {
-	display: flex;
-	vertical-align: middle;
-	border: 1px solid #8A8A8A;
-	margin-top: 10px;
-	border-radius: 5px;
+    padding-left: 20px;
+    padding-right: 20px;
+    border: 1px solid #8A8A8A;
+    border-width: 1px 1px 1px 1px;
 	background-color: #CECECE;
 	text-align: center;
 	height: 36px;
-	color: #333333;
+	color: #333;
     cursor: default;
+    border-radius: 18px;
 }
 .dgui-field-switch-selected {
+    padding-left: 20px;
+    padding-right: 20px;
     height: 36px;
-    border-radius: 5px;
 	background-color: #696969;
     color: white;
     cursor: default;
+    border-radius: 18px;
 }
 .dgui-field-switch:hover {
 	background-color: #D1DAD1;

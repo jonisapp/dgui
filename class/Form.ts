@@ -18,7 +18,9 @@ import { FieldDuration } from './fields/FieldDuration';
 import { FieldSelect } from './fields/FieldSelect';
 import { FieldSwitch } from './fields/FieldSwitch';
 
-import { confirm, modal, contextMenu} from '../dgui';
+import { confirm, modal, contextMenu} from '../dgui.ts';
+
+// import { field_condition, field_radioButton, field_descriptor } from '../class/fields/interfaces';
 
 /* --------------------------------- Interfaces Form ---------------------------------------------*/
 
@@ -70,6 +72,7 @@ export class Form {
   toHide: any;
 
   constructor(properties, parent) {
+    console.log(properties);
     var that = this;
     for(let property in properties) {
       this[property] = properties[property];
@@ -99,7 +102,7 @@ export class Form {
     this.fields = [];
 
     if(!this.options.shape) {this.options.shape = "rounded";}
-    if(!this.options.color) {this.options.color = "#D3D3D3";}
+    if(!this.options.color) {this.options.color = "#eeeeee";}
     this.colorSet = new ColorSet(this.options.color);
 
     this.elm = document.createElement("div");
@@ -219,7 +222,7 @@ export class Form {
           field_s_descriptor.forEach(function(field) {
             if(field.label) { ++label_count; }
             field = that.generateField(fieldsContainer, field);
-            fields_inputs.push({input: field.input_elm, max: (field.max) ? field.max : null});
+            fields_inputs.push({input: field.type === 'switchGroup' ? field.elm : field.input_elm, max: (field.max) ? field.max : null});
             if(reduce_padding) {
               field.elm.style.paddingLeft = 5+"px";
               field.elm.style.paddingRight = 5+"px";
@@ -232,21 +235,23 @@ export class Form {
           }
           // Set field max attribut
           for(let i = 0; i < fields_inputs.length; ++i) {
-            if(fields_inputs[i].max) {
-              fields_inputs[i].input.addEventListener("input", (e) => {
-                e.currentTarget.value = e.currentTarget.value.toUpperCase();
-              });
-            }
-            fields_inputs[i].input.addEventListener("keyup", (e) => {
+
               if(fields_inputs[i].max) {
-                if(i < fields_inputs.length-1 && e.currentTarget.value.length == fields_inputs[i].max) {
-                  fields_inputs[i+1].input.focus();
+                fields_inputs[i].input.addEventListener("input", (e) => {
+                  e.currentTarget.value = e.currentTarget.value.toUpperCase();
+                });
+              }
+              fields_inputs[i].input.addEventListener("keyup", (e) => {
+                if(fields_inputs[i].max) {
+                  if(i < fields_inputs.length-1 && e.currentTarget.value.length == fields_inputs[i].max) {
+                    fields_inputs[i+1].input.focus();
+                  }
                 }
-              }
-              if(i >= 1 && (e.keyCode == 8 && e.currentTarget.value.length == 0)) {
-                fields_inputs[i-1].input.focus();
-              }
-            });
+                if(i >= 1 && (e.keyCode == 8 && e.currentTarget.value.length == 0)) {
+                  fields_inputs[i-1].input.focus();
+                }
+              });
+
           }
           scrollElm.appendChild(formPannelLayout);
         }
@@ -383,7 +388,6 @@ export class Form {
             })
           }
         });
-        console.log(targetFields_keys);
       }
       else {
         fieldsContainer.fields.forEach((field, i) => {
@@ -606,19 +610,19 @@ export class Form {
   submitField(field, values) {
     if(field.active) {
       let initValue = (typeof field.initValue !== "undefined") ? field.initValue : "";
-      if(["text", "password", "number", "select", "date", "duration"].includes(field.type)) {
-        // On ne soumet que les champs dont la valeur a été modifiée où qui sont "requis"
-        if(field.input_elm.value != initValue || field.required === true) {
-          values.push(this.getKeyValue(field));
+      if(["number", "text", "password", "select", "duration", "date", "switch"].includes(field.type)) {
+        // On ne soumet que les champs dont la valeur a été modifiée ou qui sont "requis"
+        if((field.input_elm.value != initValue || field.required === true) && typeof field.key !== "undefined") {
+          values.push(field.retrieve());
         }
       }
-      else if(field.type == "switch" || field.type == "switchGroup" || field.type == "selectMany") {
+      else if(field.type == "switchGroup" || field.type == "selectMany") {
         // On ne soumet que les champs dont la valeur a été modifiée
         if((field.value != initValue || field.required === true) && !field.exclude) {
           // Si le champs possède un attribut key il sera renvoyé sous forme d'objet (key: value)
           if(typeof field.key !== "undefined") {
             let objSwitchField = {};
-            objSwitchField[field.key] = (["switch", "selectMany"].includes(field.type)) ? field.value : parseInt(field.value);
+            objSwitchField[field.key] = (["selectMany"].includes(field.type)) ? field.value : parseInt(field.value);
             values.push(objSwitchField);
           }
           else {
@@ -640,28 +644,6 @@ export class Form {
           }
         }
       }
-    }
-  }
-
-  getKeyValue(field) {
-    if(typeof field.key !== "undefined") {
-      let objTextField = {};
-      if(field.type == "select" && typeof field.list[0] !== "string") {
-        objTextField[field.key] = field.value;
-      }
-      else if(field.type == "number" && field.step < 1) {
-        objTextField[field.key] = parseFloat(field.input_elm.value);
-      }
-      else if(field.type == "select" || field.type == "number") {
-        objTextField[field.key] = parseInt(field.input_elm.value);
-      }
-      else {
-        objTextField[field.key] = field.input_elm.value;
-      }
-      return objTextField;
-    }
-    else {
-      return field.input_elm.value;
     }
   }
 
@@ -698,6 +680,11 @@ export class Form {
   }
 }
 
+interface SelectManyItem {
+  label: string;
+  value: string;
+}
+
 class Field extends AbstractField {
 
   /*                                              - Définition -                                        */
@@ -706,14 +693,13 @@ class Field extends AbstractField {
   required: boolean;
   placeholder: string;
   size: number;
-  list: Array<string> | Array<Object>;
+  list: Array<string> | Array<SelectManyItem>;
   condition: boolean | field_condition;
   BSClass: string;
   group: string;
   // constroller
   conditionalFields: Array<Field>;
   input_elm: any;
-  inputs_elm?: Array<HTMLDivElement> | Array<HTMLInputElement>;
   labels_elm?: Array<HTMLLabelElement>;
   button_elm: HTMLButtonElement;
   switched?: boolean;
@@ -750,13 +736,14 @@ class Field extends AbstractField {
           let input_elm = document.createElement("div");
           input_elm.setAttribute("data-value", i);
           that.generateSwitch(input_elm, switchLabel);
-          that.inputs_elm.push(input_elm);
+          (<HTMLDivElement[]>that.inputs_elm).push(input_elm);
         });
         this.inputs_elm[this.initValue].setAttribute("class", "dgui-field-switch-selected");
         this.inputs_elm[this.initValue].style.backgroundColor = "#696969";
         this.inputs_elm[0].style.borderTopLeftRadius = "18px"; this.inputs_elm[0].style.borderBottomLeftRadius = "18px";
         this.inputs_elm[this.inputs_elm.length-1].style.borderTopRightRadius = "18px";
         this.inputs_elm[this.inputs_elm.length-1].style.borderBottomRightRadius = "18px";
+        this.inputs_elm[this.inputs_elm.length-1].style.borderRightWidth = "1px";
         this.inputs_elm.forEach((input_elm, i) => {
           input_elm.addEventListener("click", (e: any) => {
             that.inputs_elm.forEach((ie) => {
@@ -886,7 +873,7 @@ class Field extends AbstractField {
       this.inputs_elm.forEach((input_elm) => {
         let elm = document.createElement("div");
         elm.setAttribute("class", "dgui-form-pannel-element");
-        elm.setAttribute("style", "flex: 1; padding-left: 2px; padding-right: 2px");
+        elm.setAttribute("style", "flex: 1; padding-left: 0px; padding-right: 0px");
         elm.appendChild(input_elm);
         hLayout_elm.appendChild(elm);
       });
@@ -907,14 +894,14 @@ class Field extends AbstractField {
         selected_items = selected_items + that.list[val] + ", ";
       });
     }
-    else if(typeof this.list[0] === "object") {
+    else if(typeof (<SelectManyItem>this.list[0]) === "object") {
       this.value = [];
       value.forEach((val) => {
-        that.value.push(that.list[val].value);
-        selected_items = selected_items + that.list[val].label + ", ";
+        that.value.push((<SelectManyItem>that.list[val]).value);
+        selected_items = selected_items + (<SelectManyItem>that.list[val]).label + ", ";
       });
     }
-    if(typeof this.action !== "undefined") { this.action(this.value); }
+    if(typeof this.action !== "undefined") { (<Function>this.action)(this.value); }
     this.input_elm.innerHTML = (this.value.length !== 0) ? selected_items.slice(0, -2) : "<span style='color: #7f7f7f'>" + this.placeholder + "</span>";
   }
 
@@ -977,5 +964,4 @@ class Field extends AbstractField {
       }
     }
   }
-     
 }

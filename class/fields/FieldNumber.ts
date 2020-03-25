@@ -3,8 +3,11 @@ import { Form } from '../Form';
 import { InputField } from './InputField';
 
 export class FieldNumber extends InputField {
+step: number;
+
   constructor(attr: field_descriptor, parent?: Form) {
     super(attr, parent);
+    this.step = parseFloat(attr.step);
     this.input_elm.value = this.value;
     this.input_elm.setAttribute("step", (attr.step) ? attr.step : "1");
     this.input_elm.setAttribute("min", "0");
@@ -26,7 +29,7 @@ export class FieldNumber extends InputField {
     // }
   }
 
-  applyCondition(condition) {
+  applyCondition(condition): void {
     this.show();
     this.clearValue();
     if(condition.focus) {
@@ -34,7 +37,11 @@ export class FieldNumber extends InputField {
     }
   }
 
-  clearValue() {
+  getValue(): number {
+    return (this.step < 1) ? parseFloat(this.input_elm.value) : parseInt(this.input_elm.value);
+  }
+
+  clearValue(): void {
     this.input_elm.value = this.initValue;
   }
 }

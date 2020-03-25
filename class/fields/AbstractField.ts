@@ -9,20 +9,22 @@ export abstract class AbstractField {
   type: "message" | "button" | "text" | "password" | "number" | "choice" | "switch" | "switchGroup" | "select" | "selectMany" | "date" | "duration";
   label: string;
   label_elm?: HTMLLabelElement;
-  required?: boolean;
+  required: boolean;
   trigger?: Function;
   parent?: Form;
   elm: HTMLDivElement;
   conditionalFields: Array<any>; // !
   condition: any;                // !
   //private
-  active: boolean;
+  protected active: boolean;
   exclude: boolean;
-  action: Function | boolean;
+  action: Function | boolean | string;
   display: "noLabel";
 
-  input_elm: HTMLInputElement | HTMLSelectElement;
-  inputs_elm: HTMLInputElement[];
+  abstract getValue(): any;
+
+  input_elm: HTMLInputElement | HTMLSelectElement | HTMLDivElement;
+  inputs_elm: HTMLInputElement[] | HTMLDivElement[];
 
   constructor(attr: field_descriptor, parent?: Form) {
     this.key = attr.key;
@@ -33,6 +35,7 @@ export abstract class AbstractField {
     if(attr.display == "noLabel") {
       this.display = "noLabel"
     }
+    this.required = (attr.required) ? attr.required : false;
     this.active = true;
     this.conditionalFields = [];
     this.condition = attr.condition;
@@ -73,6 +76,12 @@ export abstract class AbstractField {
         return fields[i];
       }
     }
+  }
+
+  retrieve() {
+    let submittedField = {};
+    submittedField[this.key] = this.getValue();
+    return submittedField;
   }
 
   applyCondition(condition) {
@@ -140,7 +149,6 @@ export abstract class AbstractField {
   }
 
   check_condition(targetField: AbstractField) {
-    var that = this;
     let operator = (this.condition.operator) ? this.condition.operator : "==";
     this.condition.action = (this.condition.action) ? this.condition.action : ["show"];
     this.condition.action = (Array.isArray(this.condition.action)) ? this.condition.action : [this.condition.action];
@@ -188,9 +196,9 @@ export abstract class AbstractField {
   generateSwitch(input_elm, label) {
     input_elm.setAttribute("class", "dgui-field-switch");
     input_elm.setAttribute("style", "display: flex; justify-content: center; align-items: center; margin-top: 0px");
-    if(this.display == "noLabel") {
-      input_elm.style.marginTop = "32px";
-    }
+    // if(this.display == "noLabel") {
+    //   input_elm.style.marginTop = "32px";
+    // }
     input_elm.style.backgroundColor = this.parent.colorSet.secColor;
     let text_elm = document.createElement("div");
     text_elm.textContent = label;

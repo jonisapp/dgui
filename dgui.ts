@@ -434,7 +434,7 @@ export function confirm(message: string, callback: Function, title = tr.title("c
 export function prompt(message: string, callback: any, title:string = tr.title("entry"), options = {maxWidth: 500}) {
   new Modal({
     title: title,
-    fields: [{type: "message", message: message}, {type: "text"}],
+    fields: [{type: "message", message: message}, {type: "text", key: 'res'}],
     footer: [
       {action: "submit", value: tr.btn("valid"), BSClass: "btn-danger"},
       {action: "quit", value: tr.btn("cancel"), BSClass: "btn-warning"}
@@ -489,6 +489,12 @@ class FormBlock {
     this.form = new Form(formInitializer, this);
     parent.appendChild(this.form.elm);
   }
+}
+
+export function reactForm(formInitializer: formPannel_options, callback) {
+  let parent = document.createElement('div');
+  let formBlock = new FormBlock(parent, formInitializer, callback);
+  return parent;
 }
 
 export function form(parent: any, formInitializer: formPannel_options, callback) {

@@ -1,3 +1,5 @@
+// test
+
 var translations = {
   titles: {
     information: {en: "Information", fr: "Information"},
